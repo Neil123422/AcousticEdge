@@ -5,73 +5,118 @@ How to launch the whole stack and demonstrate the acoustic inspection POC in Exp
 ## Prerequisites
 
 - Node 18+ and npm set up (already done)
-- Phone with Expo Go installed (App Store / Play Store) — same Wi-Fi as this PC
-- FastAPI + the deployed CNN model in `ml-training` (BENCHMARK-CNN-v1)
+- GitHub account (free)
+- Render account (free)
+- Expo account (free, for EAS builds)
+- Android device with Expo Go installed (for testing) OR ability to install standalone APK
+- Same Wi-Fi as this PC (for initial testing; mobile data works after cloud deploy)
 
-## 1. Start the inference service (FastAPI)
+## Overview
 
-```bash
-cd ml-training
-.venv\Scripts\activate          # Windows (PowerShell); or: source .venv/bin/activate
-python -m uvicorn src.inference:app --host 127.0.0.1 --port 8100
-```
+This setup creates:
+1. A **standalone Android APK** (built via EAS) with the JS bundle embedded
+2. A **cloud-hosted backend** (Render free tier) running Express + FastAPI in a single Docker container
+3. No need for Metro, Expo Go, or local tunneling after initial build/deploy
 
-Verify: `curl.exe --connect-timeout 5 --max-time 15 http://127.0.0.1:8100/health`
+The phone talks directly to `https://<your-app>.onrender.com/api/inspect` — no local services required.
 
-## 2. Start the Express API proxy
+---
 
-```bash
-npm run build          # esbuild -> dist/index.js
-node dist/index.js     # reads .env (INFERENCE_URL, PORT)
-```
+## Phase 1: Prepare the Repository (Already Done)
 
-Verify: `curl.exe --connect-timeout 5 --max-time 15 http://127.0.0.1:3000/api/health`
+The repo has been prepared with:
+- Fixed `.gitignore` to ship model weights (`best_model.pt`, `normalize.json`, etc.)
+- Dockerfile for single-container backend (FastAPI + Express)
+- `render.yaml` for Render deployment
+- `eas.json` + `.easignore` for EAS Android builds
+- `.env` configured for container localhost (`INFERENCE_URL=http://127.0.0.1:8000`)
 
-## 3. Start the Cloudflare tunnel (optional but recommended for phone on mobile data)
+## Phase 2: Deploy Backend to Render (Free Tier)
 
-```bash
-"C:\Program Files (x86)\cloudflared\cloudflared.exe" tunnel --url http://127.0.0.1:3000
-```
+1. **Create GitHub repo** (if not done):
+   ```bash
+   git init
+   git add .
+   git commit -m "Initial commit"
+   git branch -M main
+   git remote add origin https://github.com/<YOUR-USERNAME>/<REPO-NAME>.git
+   git push -u origin main
+   ```
 
-Note the printed `https://<random>.trycloudflare.com` URL — use it as `EXPO_PUBLIC_API_BASE_URL` in step 4.
+2. **Deploy to Render**:
+   - Sign up at [render.com](https://render.com) (free account)
+   - New → Web Service → Connect your GitHub repo
+   - Settings:
+     - Environment: `Docker`
+     - Build Command: *leave blank*
+     - Start Command: *leave blank*
+     - Region: Oregon (or closest to you)
+   - Click "Create Web Service"
+   - Wait for build (~3-5 min due to torch wheel)
+   - Note your service URL: `https://<your-service-name>.onrender.com`
 
-## 4. Start Metro (Expo Go bundler) — writes the QR
+3. **Verify backend health**:
+   ```bash
+   curl https://<your-service>.onrender.com/api/inspect/health
+   # Expected: {"ok":true, "upstream":{...}}
+   ```
 
-```bash
-rm -rf .expo
-EXPO_PUBLIC_API_BASE_URL="https://yourself-crown-applying-refurbished.trycloudflare.com" \
-EXPO_USE_FALLBACK_WATCHER=1 \
-npx expo start -c
-```
+   Test real inspection:
+   ```bash
+   curl -X POST https://<your-service>.onrender.com/api/inspect \
+     -H "Content-Type: application/json" \
+     -d '{"audioBase64":"<tiny-base64>"}','fileName":"test.m4a","conveyorId":"CV-01"}'
+   # Expected: CNN risk JSON
+   ```
 
-- `EXPO_PUBLIC_API_BASE_URL` is baked in at bundle time → must point at the live tunnel (or `http://<pc-lan-ip>:3000` if only LAN).
-- `EXPO_USE_FALLBACK_WATCHER=1` + `-c` avoid the Windows Metro `EINVAL` watcher crash.
-- On startup Expo prints a **QR code**; scan it with Expo Go. Fallback: type `exp://192.168.1.3:8081` into Expo Go.
+## Phase 3: Build Standalone Android APK
 
-## 5. Demo flow (Home tab)
+1. **Install EAS CLI** (once):
+   ```bash
+   npm i -D eas-cli
+   npx eas login  # free Expo account
+   ```
 
-1. Target: `CV-01 · Primary line` (or any).
-2. Tap **START INSPECTION** → hold phone steady at the measurement point for 10–15 s.
-3. Tap **STOP & ANALYZE** → Live Monitor shows scanning, then a fault prediction block.
-4. Result card shows risk (NORMAL / REVIEW / CRITICAL), score %, summary, advice, features.
+2. **Create EAS config** (if not done):
+   - `eas.json` already exists with `preview` profile
+   - `.easignore` already exists to exclude heavy dirs
 
-Full walk-through: open `architecture.tsx` tab to narrate capture → validate → log-mel features → CNN → risk.
+3. **Build the release APK**:
+   ```bash
+   EXPO_PUBLIC_API_BASE_URL="https://<your-service>.onrender.com" npx eas build -p android --profile preview
+   ```
+   - Wait for build (~5-10 min)
+   - Download the `.apk` from the Expo dashboard link
+
+4. **Install on Android**:
+   - Transfer the `.apk` to your device (email, cloud, etc.)
+   - Open the file → "Install" (enable "Install unknown apps" for your browser if prompted)
+   - Open the app — no Metro, no QR, no PC running required!
+
+## Phase 4: Demo Flow
+
+- Open the installed app → Home tab.
+- Select conveyor (e.g., `CV-01 · Primary line`).
+- Tap **START INSPECTION** → hold phone steady at measurement point for 10–15s.
+- Tap **STOP & ANALYZE** → Live Monitor shows scanning, then Result Card displays:
+  - Risk (NORMAL/REVIEW/CRITICAL) + score%
+  - Summary, advice, features, model
+- History persists on-device (AsyncStorage) across app restarts.
 
 ## Troubleshooting
 
-- **Metro `EINVAL: invalid argument, read: node:fs`** → stop Metro, `rm -rf .expo`, restart with the fallback watcher + `-c` as above.
-- **Expo Go can’t reach Metro** → same Wi-Fi required; use LAN IP (192.168.1.3), not localhost; re-run the QR script (`npm run qr -- <exp://url>` / `node scripts/generate_qr.mjs "<url>"`) and scan again.
-- **Tunnel URL changed** → copy the new URL, restart Metro with the updated `EXPO_PUBLIC_API_BASE_URL` (rebundle needed), rescan.
-- **FastAPI says model not loaded** → start uvicorn from inside `ml-training` so relative model paths resolve (duplicate instance on 8100 → kill the stray, wait a second).
-- **Icons/code references not found** → `npx expo export --platform android` still bundles OK; if not, `npm run check` (tsc) first.
-- **History empty** → results save to AsyncStorage on-device; they persist across restarts while the app stays installed.
+- **Build fails on Render (torch OOM)**: Render free tier has 512MB RAM. The model is tiny, but torch+librosa import may spike. If OOM:
+  1. Try a free Oracle Cloud VM (always-on, 1GB RAM) — same Dockerfile works.
+  2. Or use Railway (~$5/mo) for guaranteed resources.
+- **First request slow after idle**: Render free tier sleeps after ~15 min → first request takes 30-60s (cold start). Acceptable for demos; add a keep-alive ping (e.g., UptimeRobot) if needed.
+- **Cannot install APK**: Enable "Install unknown apps" for your browser/file manager in Android Settings.
+- **No model weights in build**: Verify `.gitignore` was fixed to `!ml-training/models/` exceptions before committing.
 
-## Helper commands
+## Notes
 
-```bash
-npm run check        # tsc --noEmit — 0 errors expected
-npm run build        # esbuild → dist/index.js for Express
-node scripts/generate_qr.mjs "exp://192.168.1.3:8081"   # writes expo-qr-code.png
-```
+- **Accuracy**: Hosting choice (Render, Oracle, etc.) does not change CNN math — identical weights → identical logits for identical input. Accuracy depends on pinned deps and exact model artifact (already handled via fixed `.gitignore` and `requirements.txt`).
+- **No Play Store fee**: Installing the APK directly avoids the $25 one-time developer account.
+- **iOS**: Skipped per your choice; Android-only build.
+- **Costs**: $0/mo (Render free + GitHub free + Expo EAS free tier + no Play Store).
 
-Scanning `expo-qr-code.png` requires the Metro server from step 4 running — encode the same host:port as the printed QR.
+You now have a truly standalone acoustic inspection app that works anywhere with mobile data — no local services, no Metro, no QR codes. Just install the APK and inspect!
