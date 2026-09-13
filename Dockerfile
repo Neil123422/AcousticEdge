@@ -18,10 +18,6 @@ RUN pip install --no-cache-dir torch torchaudio --index-url https://download.pyt
 COPY ml-training/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install ONLY server Node deps (tiny set)
-COPY server/package.json ./server/package.json
-RUN npm install --prefix server
-
 # Copy source needed for bundling
 COPY server/ ./server/
 COPY shared/ ./shared/
@@ -29,8 +25,11 @@ COPY drizzle/ ./drizzle/
 COPY ml-training/ ./ml-training/
 COPY tsconfig.json ./
 
+# Install ONLY server Node deps (tiny set)
+RUN npm install --prefix server
+
 # Build self-contained bundle (bundle all deps, no externals needed at runtime)
-RUN npx esbuild server/_core/index.ts --platform=node --format=esm --bundle --outdir=dist/
+RUN npx esbuild server/_core/index.ts --platform=node --format=cjs --bundle --outdir=dist/
 
 # ==== STAGE B: Runtime ====
 FROM python:3.11-slim
