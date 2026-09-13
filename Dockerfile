@@ -20,7 +20,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Install ONLY server Node deps (tiny set)
 COPY server/package.json ./server/package.json
-RUN npm ci --prefix server
+RUN npm install --prefix server
 
 # Copy source needed for bundling
 COPY server/ ./server/
