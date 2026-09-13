@@ -1,0 +1,2 @@
+sample_id,file_name,split,session_id,conveyor_id,label_code,quality_status,source_path,checksum,review_status,model_use,notes
+SAMPLE-0001,2026-09-11_CV-01_normal_001.m4a,train,SESSION-0001,CV-01,normal,good,raw/2026-09-11_CV-01_normal_001.m4a,,reviewed,train,

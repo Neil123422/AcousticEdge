@@ -1,0 +1,9 @@
+label_code,label_name,definition,required_evidence,allowed_severity,reviewer_role,notes
+normal,Normal operation,No known abnormality during confirmed operating condition,Maintenance or operator confirmation,none,maintenance_expert,
+unknown,Unknown anomaly,Sound differs from baseline but cause is not confirmed,Repeat recording or inspection note,low|medium|high,maintenance_expert,Do not force into a known fault class
+idler_fault,Idler or roller fault,Abnormal idler/roller sound confirmed by inspection,Maintenance record or physical inspection,low|medium|high,maintenance_expert,
+bearing_fault,Bearing fault,Confirmed bearing degradation or replacement,Maintenance record or physical inspection,low|medium|high,maintenance_expert,
+belt_misalignment,Belt misalignment,Confirmed belt tracking/misalignment issue,Inspection record,low|medium|high,maintenance_expert,
+belt_slippage,Belt slippage,Confirmed slip at drive or pulley,Inspection record,low|medium|high,maintenance_expert,
+possible_rupture,Possible belt rupture,Confirmed tear/rupture or immediate pre-failure acoustic event,Approved maintenance/safety record,high,authorized_domain_expert,Use only when evidence supports the label
+poor_quality,Unusable recording,Clipped/silent/too short/heavily contaminated,Signal-quality check,none,ml_or_data_reviewer,Exclude from model training unless studying quality rejection

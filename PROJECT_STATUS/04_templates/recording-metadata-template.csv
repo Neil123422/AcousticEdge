@@ -1,0 +1,2 @@
+sample_id,file_name,recorded_at,conveyor_id,plant_id,operator_id_or_code,fault_label,fault_severity,label_confidence,belt_speed_mps,load_condition,material_type,microphone_position,microphone_device,phone_model,ambient_noise,weather_or_environment,maintenance_state,technician_reviewer,safety_approval,notes
+SAMPLE-0001,2026-09-11_CV-01_normal_001.m4a,2026-09-11T10:00:00+05:30,CV-01,PLANT-01,OP-01,normal,none,high,2.5,half,aggregate,return_idler,phone_internal,MODEL-PLACEHOLDER,low,indoor,routine,TECH-01,yes,
