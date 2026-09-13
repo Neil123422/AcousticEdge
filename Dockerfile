@@ -18,7 +18,7 @@ COPY ml-training/ ./ml-training/
 FROM node:22 AS node-builder
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci
+RUN npm install 
 COPY . .
 RUN npm run build  # esbuild → dist/
 
