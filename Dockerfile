@@ -17,7 +17,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Install Node deps
 COPY package*.json ./
-RUN npm ci
+RUN npm install
 
 # Build TypeScript → dist/index.js
 COPY . .
