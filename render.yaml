@@ -1,9 +1,10 @@
 services:
   - type: web
-    name: conveyor-sentinel
+    name: acousticedge
     env: docker
     plan: free
     region: oregon
     buildCommand: ""
     startCommand: ""
     autoDeploy: true
+    healthCheckPath: /api/inspect/health
