@@ -1,0 +1,29 @@
+node_modules
+.expo
+dist
+.git
+.gitignore
+.gitmodules
+npm-debug.log
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.env
+.env.*
+! .env
+.env.local
+.env.*.local
+npm ERR.*
+expo-*.log
+__tests__
+__mocks__
+*.test.*
+*.spec.*
+.opencode
+opencode.json
+opencode.jsonc
+# Keep ml-training/models
+# But exclude large caches if any
+!ml-training/models
+ml-training/node_modules
+ml-training/.expo
