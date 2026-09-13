@@ -1,4 +1,4 @@
-# Conveyor Sentinel - Standalone Android Build
+# AcousticEdge - Standalone Android Build
 
 This repository contains the code for a standalone Android app that performs acoustic conveyor inspection using a deployed CNN model.
 
