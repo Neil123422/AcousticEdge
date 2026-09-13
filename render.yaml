@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: conveyor-sentinel
+    env: docker
+    plan: free
+    region: oregon
+    buildCommand: ""
+    startCommand: ""
+    autoDeploy: true

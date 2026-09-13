@@ -1,0 +1,15 @@
+# Exclude heavy dirs not needed in JS bundle
+ml-training/
+server/
+dist/
+node_modules/
+.git/
+.expo/
+PROJECT_STATUS/
+graphify-out/
+*.log
+*.cjs
+metro-build-test.cjs
+scan-*.cjs
+read-trace.log
+session-*.md
