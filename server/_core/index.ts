@@ -84,4 +84,16 @@ async function startServer() {
   });
 }
 
-startServer().catch(console.error);
+process.on("uncaughtException", (err) => {
+  console.error("[FATAL] Uncaught exception:", err);
+});
+process.on("unhandledRejection", (reason) => {
+  console.error("[FATAL] Unhandled rejection:", reason);
+});
+
+startServer()
+  .then(() => console.log("[api] startup complete"))
+  .catch((err) => {
+    console.error("[FATAL] startup failed:", err);
+    process.exit(1);
+  });
