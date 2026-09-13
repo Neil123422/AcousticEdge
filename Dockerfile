@@ -26,6 +26,15 @@ RUN npm run build  # esbuild → dist/
 FROM python:3.11-slim
 WORKDIR /app
 
+# Install Node.js 22 and system deps
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl ca-certificates gnupg libsndfile1 && \
+    mkdir -p /etc/apt/keyrings && \
+    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
+    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list && \
+    apt-get update && apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
+
 # Copy Python deps + source
 COPY --from=python-builder /app/ml-training/ ./ml-training/
 COPY --from=python-builder /usr/local/lib/python3.11/site-packages/ /usr/local/lib/python3.11/site-packages/
@@ -33,9 +42,8 @@ COPY --from=python-builder /usr/local/lib/python3.11/site-packages/ /usr/local/l
 # Copy Node build
 COPY --from=node-builder /app/dist/ ./dist/
 
-# Set non-root user (optional but good practice)
-RUN useradd -m appuser
-USER appuser
+# Copy .env for Express (PORT, INFERENCE_URL)
+COPY .env ./
 
 # Expose Express port (mobile talks here)
 EXPOSE 3000
