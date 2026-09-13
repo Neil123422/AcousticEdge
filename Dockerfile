@@ -53,4 +53,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:3000/api/inspect/health || exit 1
 
 # Start both services: FastAPI (bg) → Express (fg)
-CMD ["sh", "-c", "echo 'Starting FastAPI...' && cd ml-training && python -m uvicorn src.inference:app --host 0.0.0.0 --port 8000 >> /tmp/fastapi.log 2>&1 & echo $! > /tmp/fastapi.pid && echo 'FastAPI started' && sleep 3 && echo 'Starting Express...' && cd /app && exec node dist/index.js >> /tmp/express.log 2>&1"]
+CMD ["sh", "-c", "cd ml-training && python -m uvicorn src.inference:app --host 0.0.0.0 --port 8000 >> /tmp/fastapi.log 2>&1 & echo $! > /tmp/fastapi.pid && echo 'FastAPI started in background' && cd /app && echo 'Starting Express...' && exec node dist/index.js >> /tmp/express.log 2>&1"]
