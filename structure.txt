@@ -1,0 +1,202 @@
+Need to install the following packages:
+tree-cli@0.6.7
+Ok to proceed? (y) 
+F:\conveyor-acoustic-poc
+├── PROJECT_STATUS
+|  ├── ML_TRAINING_ENVIRONMENT_SETUP.md
+|  ├── NEXT_7_DAYS.md
+|  ├── OWNERSHIP_GUIDE.md
+|  ├── README.md
+|  ├── STATUS_BOARD.md
+|  ├── 04_templates
+|  |  ├── dataset-manifest-template.csv
+|  |  ├── fault-label-dictionary.csv
+|  |  ├── file-naming-convention.md
+|  |  ├── recording-metadata-template.csv
+|  |  └── recording-protocol.md
+|  └── 05_decision_log
+|     └── DECISION_AND_RISK_LOG.md
+├── app
+|  ├── _layout.tsx
+|  ├── (tabs)
+|  |  ├── _layout.tsx
+|  |  ├── architecture.tsx
+|  |  ├── history.tsx
+|  |  └── index.tsx
+|  ├── dev
+|  |  └── theme-lab.tsx
+|  └── oauth
+|     └── callback.tsx
+├── assets
+|  └── images
+|     ├── android-icon-background.png
+|     ├── android-icon-foreground.png
+|     ├── android-icon-monochrome.png
+|     ├── favicon.png
+|     ├── icon.png
+|     ├── partial-react-logo.png
+|     ├── react-logo.png
+|     ├── react-logo@2x.png
+|     ├── react-logo@3x.png
+|     └── splash-icon.png
+├── components
+|  ├── external-link.tsx
+|  ├── haptic-tab.tsx
+|  ├── hello-wave.tsx
+|  ├── parallax-scroll-view.tsx
+|  ├── screen-container.tsx
+|  ├── themed-view.tsx
+|  ├── ui
+|  |  ├── collapsible.tsx
+|  |  ├── icon-symbol.ios.tsx
+|  |  └── icon-symbol.tsx
+|  ├── terminal.tsx
+|  └── live-monitor.tsx
+├── constants
+|  ├── const.ts
+|  ├── oauth.ts
+|  └── theme.ts
+├── drizzle
+|  ├── 0000_elite_eternals.sql
+|  ├── relations.ts
+|  ├── schema.ts
+|  ├── meta
+|  |  ├── 0000_snapshot.json
+|  |  └── _journal.json
+|  └── migrations
+├── hooks
+|  ├── use-auth.ts
+|  ├── use-color-scheme.ts
+|  ├── use-color-scheme.web.ts
+|  └── use-colors.ts
+├── lib
+|  ├── inspection-store.ts
+|  ├── poc-analysis.ts
+|  ├── theme-provider.tsx
+|  ├── trpc.ts
+|  ├── utils.ts
+|  ├── _core
+|  |  ├── api.ts
+|  |  ├── auth.ts
+|  |  ├── manus-runtime.ts
+|  |  ├── nativewind-pressable.ts
+|  |  └── theme.ts
+|  ├── inspect-recording.ts
+|  └── fault-predictor.ts
+├── ml-training
+|  ├── README.md
+|  ├── requirements-lock.txt
+|  ├── requirements.txt
+|  ├── tests
+|  |  ├── smoke_train_audio_cnn.py
+|  |  ├── test_preprocess_audio.py
+|  |  ├── test_train_cnn.py
+|  |  └── __pycache__
+|  ├── data
+|  |  ├── raw
+|  |  ├── metadata
+|  |  └── processed
+|  ├── scripts
+|  |  ├── inventory_dataset.py
+|  |  └── build_manifest.py
+|  ├── uv-torch-install.log
+|  ├── import-check.log
+|  ├── src
+|  |  ├── __init__.py
+|  |  ├── preprocess_audio.py
+|  |  ├── train_cnn.py
+|  |  ├── train_audio_cnn.py
+|  |  ├── features.py
+|  |  ├── ae_anomaly.py
+|  |  ├── train_ae.py
+|  |  ├── __pycache__
+|  |  └── inference.py
+|  ├── models
+|  |  ├── anomaly
+|  |  └── classifier
+|  ├── uvicorn-test.log
+|  ├── uv2.log
+|  ├── uv3.log
+|  ├── uv4.log
+|  ├── uv5.log
+|  ├── wav_normal.json
+|  └── wav_abnormal.json
+├── scripts
+|  ├── generate_qr.mjs
+|  ├── load-env.js
+|  └── reset-project.js
+├── server
+|  ├── db.ts
+|  ├── routers.ts
+|  ├── storage.ts
+|  ├── _core
+|  |  ├── context.ts
+|  |  ├── cookies.ts
+|  |  ├── dataApi.ts
+|  |  ├── env.ts
+|  |  ├── heartbeat.ts
+|  |  ├── imageGeneration.ts
+|  |  ├── index.ts
+|  |  ├── llm.ts
+|  |  ├── notification.ts
+|  |  ├── oauth.ts
+|  |  ├── sdk.ts
+|  |  ├── storageProxy.ts
+|  |  ├── systemRouter.ts
+|  |  ├── trpc.ts
+|  |  ├── voiceTranscription.ts
+|  |  ├── types
+|  |  └── inspectProxy.ts
+|  ├── package.json
+|  └── package-lock.json
+├── shared
+|  ├── const.ts
+|  ├── types.ts
+|  └── _core
+|     └── errors.ts
+├── tests
+|  ├── auth.logout.test.ts
+|  └── poc-analysis.test.ts
+├── POC_IMPLEMENTATION.md
+├── app.config.ts
+├── babel.config.js
+├── drizzle.config.ts
+├── eslint.config.js
+├── expo-env.d.ts
+├── global.css
+├── metro.config.js
+├── nativewind-env.d.ts
+├── tailwind.config.js
+├── template.json
+├── theme.config.d.ts
+├── theme.config.js
+├── tsconfig.json
+├── graphify-out
+|  └── cache
+|     └── stat-index.json
+├── session-ses_f6fe.md
+├── pnpm-lock.yaml
+├── package-lock.json
+├── expo-qr-code.png
+├── LIVE_DEMO.md
+├── metro.log
+├── package.json
+├── metro-build-test.cjs
+├── scan-fs-test.cjs
+├── scan-nm.cjs
+├── read-trace.log
+├── Dockerfile
+├── render.yaml
+├── eas.json
+├── README.md
+├── metro-fast.log
+├── expo-qr-code-phone.png
+├── QUICKSTART.md
+└── structure.txt
+
+directory: 1825 file: 4077
+
+ignored: directory (177)
+
+
+[2K[1G
