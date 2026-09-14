@@ -80,3 +80,4 @@ ml-training/models/
 !ml-training/models/classifier/normalize.json
 !ml-training/models/classifier/label_map.json
 !ml-training/models/classifier/metrics.json
+server/package-lock.json
