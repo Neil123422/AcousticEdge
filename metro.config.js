@@ -3,9 +3,11 @@ const { withNativeWind } = require("nativewind/metro");
 
 const config = getDefaultConfig(__dirname);
 
+// Disable cache for problematic modules
+config.cacheStores = [];
+config.resetCache = true;
+
 module.exports = withNativeWind(config, {
   input: "./global.css",
-  // Force write CSS to file system instead of virtual modules
-  // This fixes iOS styling issues in development mode
   forceWriteFileSystem: true,
 });
