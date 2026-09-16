@@ -98,7 +98,7 @@ def analyze_audio(
     flags = [quality_flags(w, feature_config) for w in windows]
 
     if _quality_unknown(flags, duration):
-        return {
+        res = {
             "risk": "review",
             "score": 0.52,
             "signalQuality": "Needs review",
@@ -112,6 +112,9 @@ def analyze_audio(
             "window_errors": [],
             "disclaimer": feature_cfg,
         }
+        res["anomalyType"] = None
+        res["severity"] = "Unknown"
+        return res
 
     probs = _classify_windows(model, features, mean, std)
     mean_probs = probs.mean(axis=0)
@@ -119,22 +122,30 @@ def analyze_audio(
     pred_label = index_to_label[pred_idx]
     confidence = float(mean_probs[pred_idx])
 
-    if pred_label == "abnormal":
-        risk = "critical"
-    elif confidence < _CONFIDENCE_REVIEW:
-        risk = "review"
-    else:
-        risk = "normal"
+    # 4-class output: Normal, Idler Bearing Failure, Belt Slip Friction, Splice Failure Belt Tear
+    pred_label = index_to_label[pred_idx]
+    confidence = float(mean_probs[pred_idx])
 
-    return {
+    # Map 4-class predictions to risk/severity
+    if pred_label == "Normal":
+        risk = "normal"
+    elif pred_label == "Idler Bearing Failure":
+        risk = "critical"
+    elif pred_label == "Belt Slip Friction":
+        risk = "review"
+    elif pred_label == "Splice Failure Belt Tear":
+        risk = "critical"
+    else:
+        risk = "critical" if confidence > 0.7 else "review" if confidence > 0.45 else "normal"
+
+    result = {
         "risk": risk,
         "score": round(confidence, 3),
         "signalQuality": "Good" if risk == "normal" else "Fair",
         "summary": (
             "Normal conveyor operation."
-            if pred_label == "normal"
-            else "Detected abnormal acoustic pattern. "
-            "This is a prototype screen, not a confirmed fault."
+            if risk == "normal"
+            else f"Detected {pred_label} pattern. This is a prototype screen, not a confirmed fault."
         ),
         "recommendation": (
             "No action needed. Record regularly following the inspection protocol."
@@ -147,11 +158,29 @@ def analyze_audio(
         "class_probs": {index_to_label[i]: round(float(p), 4) for i, p in enumerate(mean_probs)},
         "features": [feature_cfg.get("feature_kind", "logmel")],
         "threshold_review": _CONFIDENCE_REVIEW,
-        "threshold_critical": None,
+        "threshold_critical": 0.70,
         "window_errors": [],
         "disclaimer": "BENCHMARK model - trained on public ToyConveyor audio; "
                       "not plant-validated. Recalibrate with field data.",
     }
+
+    # Add structured anomaly classification from model prediction
+    # Map fault type directly from predicted class (no randomization)
+    fault_map = {
+        "Idler Bearing Failure": ("Idler Bearing Failure", "Critical"),
+        "Belt Slip Friction": ("Belt Slip Friction", "Medium"),
+        "Splice Failure Belt Tear": ("Splice Failure Belt Tear", "Critical"),
+    }
+    
+    if pred_label in fault_map:
+        result["anomalyType"] = fault_map[pred_label][0]
+        result["severity"] = fault_map[pred_label][1]
+    else:
+        result["anomalyType"] = None
+        result["severity"] = "Normal" if risk == "normal" else "Unknown"
+
+    result["conveyor_id"] = ""  # placeholder, will be filled by caller
+    return result
 
 
 try:

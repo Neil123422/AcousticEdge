@@ -15,7 +15,7 @@ const bundleId = rawBundleId
 const timestamp = bundleId.split(".").pop()?.replace(/^t/, "") ?? "20260911132300";
 
 const config: ExpoConfig = {
-  name: "Conveyor Sentinel",
+  name: "AcousticEdge",
   slug: "conveyor-acoustic-poc",
   version: "1.0.0",
   orientation: "portrait",
@@ -42,7 +42,7 @@ const config: ExpoConfig = {
   web: { bundler: "metro", output: "static", favicon: "./assets/images/favicon.png" },
   plugins: [
     "expo-router",
-    ["expo-audio", { microphonePermission: "Allow Conveyor Sentinel to access your microphone for safe acoustic inspections." }],
+    ["expo-audio", { microphonePermission: "Allow AcousticEdge to access your microphone for safe acoustic inspections." }],
     ["expo-splash-screen", { image: "./assets/images/splash-icon.png", imageWidth: 200, resizeMode: "contain", backgroundColor: "#07161B" }],
     ["expo-build-properties", { android: { buildArchs: ["armeabi-v7a", "arm64-v8a"], minSdkVersion: 24 } }],
   ],

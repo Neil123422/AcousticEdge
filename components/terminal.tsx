@@ -1,20 +1,25 @@
 import { ReactNode } from "react";
 import { Text, View } from "react-native";
 
+/** Retro-cyberpunk industrial terminal palette per HUD spec. */
 export const TERM = {
-  bg: "#050505",
-  panel: "#0A0C0A",
-  panelRaised: "#0E140F",
-  border: "#1E3323",
-  borderDim: "#143021",
-  green: "#33FF5E",
-  greenMuted: "#4FA871",
-  greenDim: "#2A5A3A",
+  bg: "#050807",
+  bgAlt: "#0a0f0d",
+  panel: "#0a0f0d",
+  panelRaised: "#132b22",
+  border: "#1b3d32",
+  borderDim: "#132b22",
+  green: "#00FF66",
+  greenMuted: "#22c55e",
+  greenDim: "#1b3d32",
   text: "#D9FFE6",
   textDim: "#9BCDAB",
-  amber: "#FFC857",
-  red: "#FF4D4D",
+  amber: "#eab308",
+  amberDim: "#92710e",
+  red: "#ef4444",
+  redDim: "#7f1d1d",
   cyan: "#5CE1FF",
+  dimGray: "#4b6b61",
 } as const;
 
 export type TermTone = "green" | "amber" | "red" | "cyan" | "dim" | "text";
@@ -24,11 +29,11 @@ export const toneColor: Record<TermTone, string> = {
   amber: TERM.amber,
   red: TERM.red,
   cyan: TERM.cyan,
-  dim: TERM.greenMuted,
+  dim: TERM.dimGray,
   text: TERM.text,
 };
 
-/** A sharp-bordered terminal panel with an optional title bar (e.g. `[ LIVE MONITOR ]`). */
+/** A sharp-bordered terminal panel with an optional title bar. */
 export function TermPanel({
   title,
   tone = "green",
@@ -70,7 +75,7 @@ export function TermLine({
     <View className="flex-row" style={spacing ? { marginTop: 6 } : undefined}>
       {prompt ? (
         <>
-          <Text className="font-mono text-sm" style={{ color: TERM.green }}>$ </Text>
+          <Text className="font-mono text-sm" style={{ color: TERM.green }}>{">"} </Text>
           <Text className="font-mono text-sm" style={{ color: TERM.text, flexShrink: 1 }}>{children}</Text>
         </>
       ) : (
@@ -80,17 +85,17 @@ export function TermLine({
   );
 }
 
-/** A right-aligned stat line, e.g. `conf=0.998  ok`. */
+/** A right-aligned stat line. */
 export function TermStat({ label, value, tone = "text" }: { label: string; value: string; tone?: TermTone }) {
   return (
     <View className="flex-row items-center justify-between">
-      <Text className="font-mono text-xs" style={{ color: TERM.greenMuted }}>{label}</Text>
+      <Text className="font-mono text-xs" style={{ color: TERM.dimGray }}>{label}</Text>
       <Text className="font-mono text-xs font-bold" style={{ color: toneColor[tone] }}>{value}</Text>
     </View>
   );
 }
 
-/** Block gauge that reads like an ASCII meter (e.g. `[####----] 96%`). */
+/** Block gauge: [####----] 96% */
 export function TermGauge({ pct, tone = "green", width = 18 }: { pct: number; tone?: TermTone; width?: number }) {
   const clamped = Math.min(100, Math.max(0, Math.round(pct)));
   const filled = Math.round((clamped / 100) * width);
@@ -100,6 +105,16 @@ export function TermGauge({ pct, tone = "green", width = 18 }: { pct: number; to
         [{"#".repeat(filled)}{"-".repeat(width - filled)}]
       </Text>
       <Text className="font-mono text-xs font-bold" style={{ color: toneColor[tone] }}>{clamped}%</Text>
+    </View>
+  );
+}
+
+/** Percentage progress bar (visual, non-ASCII). */
+export function PctBar({ pct, color, height = 6, className }: { pct: number; color: string; height?: number; className?: string }) {
+  const clamped = Math.min(100, Math.max(0, pct));
+  return (
+    <View className={className} style={{ height, borderRadius: 0, backgroundColor: "#132b22", overflow: "hidden" }}>
+      <View style={{ height: "100%", width: `${clamped}%`, backgroundColor: color }} />
     </View>
   );
 }

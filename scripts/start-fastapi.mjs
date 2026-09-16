@@ -11,7 +11,7 @@ const pythonPath = join(mlTrainingDir, '.venv', 'Scripts', 'python.exe');
 
 console.log('[FASTAPI] Starting Python inference service...');
 
-const proc = spawn(pythonPath, ['-m', 'uvicorn', 'src.inference:app', '--host', '127.0.0.1', '--port', '8000'], {
+const proc = spawn(pythonPath, ['-m', 'uvicorn', 'src.inference:app', '--host', '0.0.0.0', '--port', '8000'], {
   cwd: mlTrainingDir,
   stdio: 'inherit',
   shell: false

@@ -22,6 +22,10 @@ module.exports = {
   theme: {
     extend: {
       colors: tailwindColors,
+      fontFamily: {
+        mono: ["JetBrainsMono", "ui-monospace", "SFMono-Regular", "Menlo", "Consolas", "monospace"],
+        sans: ["JetBrainsMono", "system-ui", "sans-serif"],
+      },
     },
   },
   plugins: [

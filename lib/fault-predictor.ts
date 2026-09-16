@@ -9,6 +9,7 @@ export type FaultPrediction = {
   message: string;
   anomalyPercent: number;
   barPercent: number;
+  normalScore: number;
 };
 
 const round = (n: number) => Math.round(n * 1000) / 10;
@@ -27,9 +28,15 @@ const round = (n: number) => Math.round(n * 1000) / 10;
  */
 export function anomalyPercent(result: AnalysisResult): number {
   const score = result.score ?? 0;
-  if (result.predictedClass === "abnormal") return round(score);
-  if (result.predictedClass === "normal") return round(1 - score);
+  if (result.predictedClass === "Normal") return round(1 - score);
+  if (["Idler Bearing Failure", "Belt Slip Friction", "Splice Failure Belt Tear"].includes(result.predictedClass as string)) return round(score);
   return round(score);
+}
+
+/** Fraction 0..1 that the sample is NORMAL (complement of anomaly). */
+export function normalScore(result: AnalysisResult): number {
+  const anomaly = anomalyPercent(result);
+  return Math.min(99.9, Math.max(0, 100 - anomaly)) / 100;
 }
 
 /**
@@ -51,6 +58,7 @@ export function predictFault(result: AnalysisResult): FaultPrediction {
       message: "Retake the sample from the approved measurement point.",
       anomalyPercent: pct,
       barPercent,
+      normalScore: normalScore(result),
     };
   }
 
@@ -62,6 +70,7 @@ export function predictFault(result: AnalysisResult): FaultPrediction {
       message: "Acoustic profile is inside the normal operating envelope.",
       anomalyPercent: pct,
       barPercent,
+      normalScore: normalScore(result),
     };
   }
 
@@ -75,5 +84,6 @@ export function predictFault(result: AnalysisResult): FaultPrediction {
       : "Impact energy in high-frequency bands indicates bearing deterioration.",
     anomalyPercent: pct,
     barPercent,
+    normalScore: normalScore(result),
   };
 }

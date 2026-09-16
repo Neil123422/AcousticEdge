@@ -6,8 +6,13 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
 import { Platform } from "react-native";
+import { useFonts } from "expo-font";
+import * as SplashScreen from "expo-splash-screen";
 import "@/lib/_core/nativewind-pressable";
 import { ThemeProvider } from "@/lib/theme-provider";
+
+// Keep the splash visible until JetBrains Mono is loaded.
+SplashScreen.preventAutoHideAsync().catch(() => {});
 import {
   SafeAreaFrameContext,
   SafeAreaInsetsContext,
@@ -27,6 +32,19 @@ export const unstable_settings = {
 };
 
 export default function RootLayout() {
+  const [fontsLoaded, fontError] = useFonts({
+    JetBrainsMono: require("@/assets/fonts/JetBrainsMono-Regular.ttf"),
+    JetBrainsMonoBold: require("@/assets/fonts/JetBrainsMono-Bold.ttf"),
+  });
+  const [fontsReady, setFontsReady] = useState(false);
+
+  useEffect(() => {
+    if (fontsLoaded || fontError) {
+      SplashScreen.hideAsync().catch(() => {});
+      setFontsReady(true);
+    }
+  }, [fontsLoaded, fontError]);
+
   const initialInsets = initialWindowMetrics?.insets ?? DEFAULT_WEB_INSETS;
   const initialFrame = initialWindowMetrics?.frame ?? DEFAULT_WEB_FRAME;
 
@@ -96,6 +114,8 @@ export default function RootLayout() {
   );
 
   const shouldOverrideSafeArea = Platform.OS === "web";
+
+  if (!fontsReady) return null;
 
   if (shouldOverrideSafeArea) {
     return (

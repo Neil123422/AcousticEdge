@@ -27,6 +27,17 @@ def _machine_of(file_name: str) -> str:
     return m.group(1) if m else "00"
 
 
+def _map_fault_type(fault_type: str) -> str:
+    """Map raw fault_type to standardized class names."""
+    mapping = {
+        "Normal": "Normal",
+        "Idler Bearing Failure": "Idler Bearing Failure",
+        "Belt Slip Friction": "Belt Slip Friction",
+        "Splice Failure Belt Tear": "Splice Failure Belt Tear",
+    }
+    return mapping.get(fault_type, "Unknown")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Train the audio CNN")
     parser.add_argument("--metadata", required=True, type=Path)
@@ -48,7 +59,9 @@ def main() -> None:
 
     config = FeatureConfig(feature_kind=args.feature_kind)
     rows = _read_manifest(args.metadata)
-    labels = sorted({r["label_code"] for r in rows if r.get("label_code")})
+    
+    # Use fault_type column for 4-class classification
+    labels = sorted({_map_fault_type(r.get("fault_type", r.get("label_code", ""))) for r in rows if r.get("fault_type") or r.get("label_code")})
     label_to_index = {label: i for i, label in enumerate(labels)}
 
     sample_groups: list[dict] = []  # one entry per clip: machine, label_idx, n_windows
@@ -56,8 +69,9 @@ def main() -> None:
     skipped: list[str] = []
     for row in rows:
         path = args.audio_root / row["file_name"]
-        label_code = row.get("label_code", "")
-        if label_code not in label_to_index or not path.exists():
+        raw_label = row.get("fault_type") or row.get("label_code", "")
+        fault_type = _map_fault_type(raw_label)
+        if fault_type not in label_to_index or not path.exists():
             skipped.append(str(path))
             continue
         try:
@@ -73,7 +87,7 @@ def main() -> None:
         sample_groups.append(
             {
                 "machine": _machine_of(row.get("file_name", "")),
-                "label": label_to_index[label_code],
+                "label": label_to_index[fault_type],
                 "n_windows": len(feats),
             }
         )
@@ -180,7 +194,7 @@ def main() -> None:
                 "std": normalize_std.numpy().reshape(-1).tolist(),
                 "feature_config": to_config_dict(config),
                 "feature_kind": args.feature_kind,
-                "model_version": "BENCHMARK-CNN-v1",
+                "model_version": "BENCHMARK-CNN-v2",
             },
             fh,
         )

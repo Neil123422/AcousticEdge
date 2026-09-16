@@ -1,5 +1,9 @@
 export type RiskLevel = "normal" | "review" | "critical";
 
+export type AnomalySeverity = "Normal" | "Low" | "Medium" | "Critical";
+
+export type AnomalyType = "Idler Bearing Failure" | "Belt Slip Friction" | "Splice Failure Belt Tear";
+
 export type AnalysisResult = {
   risk: RiskLevel;
   score: number;
@@ -8,7 +12,9 @@ export type AnalysisResult = {
   recommendation: string;
   model: string;
   features: string[];
-  predictedClass?: "normal" | "abnormal";
+  predictedClass?: "Normal" | "Idler Bearing Failure" | "Belt Slip Friction" | "Splice Failure Belt Tear";
+  anomalyType?: AnomalyType;
+  severity?: AnomalySeverity;
 };
 
 export type LogEntry = {
@@ -19,10 +25,6 @@ export type LogEntry = {
 
 /**
  * Build a maintenance log entry from an analysis result.
- *
- * With the current 2-class model the entry can only state normal vs abnormal
- * operation. `parameter` is the reserved fault-type slot ("belt", "roller",
- * "gearbox"...); it reads "unknown" until a fault-typed dataset is available.
  */
 export function buildLogEntry(result: AnalysisResult, conveyorId: string): LogEntry {
   const target = conveyorId.split("·")[0].trim();
@@ -34,10 +36,13 @@ export function buildLogEntry(result: AnalysisResult, conveyorId: string): LogEn
     };
   }
   if (result.risk === "critical") {
+    const param = result.predictedClass && result.predictedClass !== "Normal"
+      ? result.predictedClass
+      : "unclassified";
     return {
       code: "OPS-ANOMALY",
-      parameter: result.predictedClass === "abnormal" ? "unclassified" : "unknown",
-      message: `Potential ${result.predictedClass === "abnormal" ? "anomalous" : "unknown"} pattern on ${target} — possible <parameter> type rupture. Parameter classification pending fault-typed dataset.`,
+      parameter: param,
+      message: `Potential ${param} on ${target} — possible ${param} type rupture.`,
     };
   }
   return {

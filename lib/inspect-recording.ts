@@ -11,7 +11,9 @@ type InferenceResponse = {
   model: string;
   model_version?: string;
   features: string[];
-  predicted_class?: "normal" | "abnormal";
+  predicted_class?: "Normal" | "Idler Bearing Failure" | "Belt Slip Friction" | "Splice Failure Belt Tear";
+  anomalyType?: "Idler Bearing Failure" | "Belt Slip Friction" | "Splice Failure Belt Tear";
+  severity?: "Normal" | "Low" | "Medium" | "Critical";
 };
 
 /**
@@ -58,5 +60,7 @@ export async function inspectRecording(input: {
     model: response.model_version ?? response.model,
     features: response.features,
     predictedClass: response.predicted_class,
+    anomalyType: response.anomalyType,
+    severity: response.severity,
   };
 }
