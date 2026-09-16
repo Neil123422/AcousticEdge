@@ -39,6 +39,7 @@ const config: ExpoConfig = {
     permissions: ["POST_NOTIFICATIONS"],
     intentFilters: [{ action: "VIEW", autoVerify: true, data: [{ scheme: `manus${timestamp}`, host: "*" }], category: ["BROWSABLE", "DEFAULT"] }],
   },
+  platforms: ["web"],
   web: { bundler: "metro", output: "static", favicon: "./assets/images/favicon.png" },
   plugins: [
     "expo-router",
