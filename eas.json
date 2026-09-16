@@ -17,13 +17,5 @@
         "EXPO_PUBLIC_API_BASE_URL": "https://acousticedge-backend.railway.app"
       }
     }
-  },
-  "hosting": {
-    "production": {
-      "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://acousticedge-backend.railway.app"
-      },
-      "autoDeploy": false
-    }
   }
 }
