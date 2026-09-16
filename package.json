@@ -12,7 +12,6 @@
     "build": "esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
     "build:web": "npx expo export --platform web",
     "build:railway": "docker build -t acousticedge-railway .",
-    "deploy:vercel": "npm run build:web && npx vercel --prod",
     "deploy:railway": "railway up",
     "start": "NODE_ENV=production node dist/index.js",
     "check": "tsc --noEmit",
