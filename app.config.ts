@@ -18,6 +18,11 @@ const config: ExpoConfig = {
   name: "AcousticEdge",
   slug: "conveyor-acoustic-poc",
   version: "1.0.0",
+  extra: {
+    eas: {
+      projectId: "9ecbf4dc-9509-4ab4-acd0-05fb7875c780"
+    }
+  },
   orientation: "portrait",
   icon: "./assets/images/icon.png",
   scheme: `manus${timestamp}`,
