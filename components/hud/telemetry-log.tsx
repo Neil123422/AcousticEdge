@@ -1,41 +1,70 @@
-import { useEffect, useRef } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 import { TERM } from "@/components/terminal";
 import type { IncidentEntry } from "@/lib/telemetry";
 
-/** Color for severity: Normal=green, Low=yellow, Medium=orange, Critical=red. */
-function severityColor(sev?: string) {
-  switch (sev) {
-    case "Critical":
-      return "text-red-500";
-    case "Medium":
-      return "text-orange-500";
-    case "Low":
-      return "text-yellow-400";
-    case "Normal":
-      return "text-green-500";
-    default:
-      return TERM.dimGray;
-  }
+interface ParsedAlert {
+  label: string;
+  color: string;
+  isSystem?: boolean;
 }
 
-/** Format anomaly type text based on severity level. */
-function formatAnomalyType(anomalyType?: string, severity?: string): string {
-  if (!anomalyType) return "";
-  switch (severity) {
-    case "Low":
-      return `POSSIBLE ${anomalyType}`;
-    case "Medium":
-      return `UNCERTAIN ${anomalyType}`;
-    case "Critical":
-    case "High":
-    default:
-      return anomalyType;
+function parseAlert(entry: IncidentEntry): ParsedAlert {
+  const raw = `${entry.message} ${entry.anomalyType ?? ""} ${entry.severity ?? ""}`.toUpperCase();
+
+  if (raw.includes("SPARK") || entry.severity === "Critical" || entry.level === "CRIT") {
+    return {
+      label: "> SPARK [HIGH ALERT]",
+      color: TERM.red,
+    };
   }
+
+  if (raw.includes("SNAP") || raw.includes("TEAR") || entry.severity === "Medium" || entry.level === "WARN") {
+    return {
+      label: "> SNAP [MEDIUM ALERT]",
+      color: "#f97316",
+    };
+  }
+
+  if (raw.includes("CRACK") || raw.includes("WHINE") || raw.includes("JAM") || entry.severity === "Low") {
+    return {
+      label: "> CRACKING [LOW ALERT]",
+      color: TERM.amber,
+    };
+  }
+
+  // System or operator notice
+  return {
+    label: entry.message.startsWith("*") ? entry.message : `* ${entry.message}`,
+    color: TERM.dimGray,
+    isSystem: true,
+  };
 }
 
-/** Column 3 — Incident Telemetry Log (compact, severity color-coded). */
+function format12HourTime(ts?: string): string {
+  if (!ts) {
+    return new Date().toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true,
+    });
+  }
+
+  // If timestamp is already in HH:MM:SS 24h format, convert to 12h AM/PM
+  const match = ts.match(/^(\d{1,2}):(\d{2}):(\d{2})/);
+  if (match) {
+    let hours = parseInt(match[1], 10);
+    const minutes = match[2];
+    const seconds = match[3];
+    const ampm = hours >= 12 ? "PM" : "AM";
+    hours = hours % 12 || 12;
+    return `${hours}:${minutes}:${seconds} ${ampm}`;
+  }
+
+  return ts;
+}
+
 export function TelemetryLog({
   entries,
   onClear,
@@ -43,54 +72,81 @@ export function TelemetryLog({
   entries: IncidentEntry[];
   onClear: () => void;
 }) {
-  const scrollRef = useRef<ScrollView>(null);
-  const atBottom = useRef(true);
-
-  useEffect(() => {
-    if (atBottom.current) {
-      scrollRef.current?.scrollToEnd({ animated: true });
-    }
-  }, [entries.length]);
+  // Video layout: newest alert appears at the top
+  const visibleEntries = [...entries].reverse();
 
   return (
     <View style={{ borderWidth: 1, borderColor: TERM.border, backgroundColor: TERM.bgAlt }}>
+      {/* Header Bar */}
       <View className="flex-row items-center justify-between px-2 py-1.5">
         <Text className="font-mono text-xs font-bold tracking-[2px]" style={{ color: TERM.green }}>
           {"// INCIDENT TELEMETRY LOG"}
         </Text>
         <Pressable
           onPress={onClear}
-          style={({ pressed }) => [{ borderWidth: 1, borderColor: TERM.borderDim, paddingHorizontal: 4, paddingVertical: 2, opacity: pressed ? 0.6 : 1 }]}
+          style={({ pressed }) => [
+            {
+              borderWidth: 1,
+              borderColor: TERM.amber,
+              paddingHorizontal: 6,
+              paddingVertical: 1,
+              opacity: pressed ? 0.6 : 1,
+            },
+          ]}
         >
-          <Text className="font-mono text-[8px] font-bold tracking-widest" style={{ color: TERM.green }}>[ CLEAR ]</Text>
+          <Text className="font-mono text-[8px] font-bold tracking-widest" style={{ color: TERM.amber }}>
+            {"[ CLEAR ]"}
+          </Text>
         </Pressable>
       </View>
 
+      {/* Log Feed */}
       <View style={{ borderTopWidth: 1, borderColor: TERM.border }}>
         <ScrollView
-          ref={scrollRef}
-          style={{ maxHeight: 160, minHeight: 120 }}
-          onScroll={(e) => {
-            const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
-            atBottom.current = contentOffset.y + layoutMeasurement.height >= contentSize.height - 24;
-          }}
-          scrollEventThrottle={100}
+          style={{ height: 135 }}
+          contentContainerStyle={{ paddingVertical: 4 }}
+          showsVerticalScrollIndicator={false}
         >
-          {entries.map((entry) => (
-            <View key={entry.id} className="flex-row px-2 py-[2px]">
-              <Text className="font-mono text-[9px]" style={{ color: TERM.dimGray }}>&gt; </Text>
-              <Text className="font-mono text-[9px]" style={{ color: TERM.dimGray }}>[{entry.ts}]</Text>
-              <Text className="ml-1.5 font-mono text-[9px] font-bold" style={{ color: severityColor(entry.severity) }}>
-                {entry.severity ? `[${entry.severity}] ` : ""}{entry.message}
-                {entry.anomalyType ? ` | ${formatAnomalyType(entry.anomalyType, entry.severity)}` : ""}
-              </Text>
-            </View>
-          ))}
-          {entries.length === 0 ? (
+          {visibleEntries.length === 0 ? (
             <Text className="px-2 py-1.5 font-mono text-[9px]" style={{ color: TERM.dimGray }}>
-              * Log cleared. Awaiting telemetry...
+              * Log buffer flushed. Awaiting telemetry...
             </Text>
-          ) : null}
+          ) : (
+            visibleEntries.map((entry) => {
+              const alert = parseAlert(entry);
+              const timestamp = format12HourTime(entry.ts);
+
+              if (alert.isSystem) {
+                return (
+                  <View key={entry.id} className="px-2 py-[2px]">
+                    <Text className="font-mono text-[9px]" style={{ color: alert.color }}>
+                      {alert.label}
+                    </Text>
+                  </View>
+                );
+              }
+
+              return (
+                <View
+                  key={entry.id}
+                  className="flex-row items-center justify-between px-2 py-[2px]"
+                >
+                  <Text
+                    className="font-mono text-[9px] font-bold tracking-wider"
+                    style={{ color: alert.color }}
+                  >
+                    {alert.label}
+                  </Text>
+                  <Text
+                    className="font-mono text-[8px] tracking-wider"
+                    style={{ color: TERM.dimGray }}
+                  >
+                    {timestamp}
+                  </Text>
+                </View>
+              );
+            })
+          )}
         </ScrollView>
       </View>
     </View>

@@ -1,13 +1,8 @@
-import {
-  requestRecordingPermissionsAsync,
-  setAudioModeAsync,
-} from "expo-audio";
 import { useEffect, useState } from "react";
-import { Alert, Pressable, Text, View } from "react-native";
+import { View } from "react-native";
 import * as Haptics from "expo-haptics";
 
 import { ScreenContainer } from "@/components/screen-container";
-import { TERM } from "@/components/terminal";
 import { HeaderBar } from "@/components/hud/header-bar";
 import { StatusBanner } from "@/components/hud/status-banner";
 import { Discriminator } from "@/components/hud/discriminator";
@@ -28,8 +23,6 @@ import {
   type AnomalyType,
   type AnomalySeverity,
 } from "@/lib/telemetry";
-
-const CONVEYORS = ["CV-01 · Primary line", "CV-02 · Transfer line", "CV-03 · Packing line"];
 
 function useTelemetry() {
   const state = getTelemetryState();
@@ -56,45 +49,95 @@ function useTelemetry() {
   return { monitoring, normalScoreV, anomalyScoreV, relay, log, lastAnomalyType, lastAnomalySeverity };
 }
 
-/** Target selector — condensed into a single row for the one-interface HUD. */
-function TargetSelect({ conveyorId, onSelect }: { conveyorId: string; onSelect: (id: string) => void }) {
-  return (
-    <View className="flex-row gap-x-2">
-      {CONVEYORS.map((item, i) => {
-        const active = item === conveyorId;
-        return (
-          <Pressable
-            key={item}
-            onPress={() => onSelect(item)}
-            style={({ pressed }) => [
-              {
-                flex: 1,
-                opacity: pressed ? 0.7 : 1,
-                borderWidth: 1,
-                borderColor: active ? TERM.green : TERM.borderDim,
-                backgroundColor: active ? TERM.panelRaised : "transparent",
-                paddingHorizontal: 6,
-                paddingVertical: 6,
-              },
-            ]}
-          >
-            <Text className="font-mono text-[10px] font-bold" style={{ color: active ? TERM.green : TERM.dimGray }}>
-              [CV-0{i + 1}]{active ? " ▸" : ""}
-            </Text>
-          </Pressable>
-        );
-      })}
-    </View>
-  );
-}
-
-
-
 export default function HomeScreen() {
-  const { monitoring, normalScoreV, anomalyScoreV, relay, log, lastAnomalyType, lastAnomalySeverity } = useTelemetry();
+  const {
+    monitoring,
+    normalScoreV,
+    anomalyScoreV,
+    relay,
+    log,
+    lastAnomalyType,
+    lastAnomalySeverity,
+  } = useTelemetry();
 
-  const [conveyorId, setConveyorId] = useState(CONVEYORS[0]);
   const [busy, setBusy] = useState(false);
+  const [bufferPercent, setBufferPercent] = useState(0);
+
+  // Live buffer gauge simulation (fluctuates between 75% and 99% while streaming)
+  useEffect(() => {
+    if (!monitoring) {
+      setBufferPercent(0);
+      return;
+    }
+    const id = setInterval(() => {
+      setBufferPercent(+(75 + Math.random() * 24).toFixed(1));
+    }, 400);
+    return () => clearInterval(id);
+  }, [monitoring]);
+
+  // Periodic telemetry log loop while monitoring is live
+  useEffect(() => {
+    if (!monitoring) return;
+
+    const interval = setInterval(() => {
+      generateTelemetryEvent();
+    }, 3600);
+
+    return () => clearInterval(interval);
+  }, [monitoring]);
+
+  function generateTelemetryEvent() {
+    const modes: {
+      type: AnomalyType;
+      signature: "SPARK" | "SNAP" | "CRACKING";
+      severity: AnomalySeverity;
+      level: "INFO" | "WARN" | "CRIT";
+      score: number;
+    }[] = [
+      { type: "Motor Sparking", signature: "SPARK", severity: "Critical", level: "CRIT", score: 0.89 },
+      { type: "Belt Tear", signature: "SNAP", severity: "Medium", level: "WARN", score: 0.62 },
+      { type: "Bearing Whine", signature: "CRACKING", severity: "Low", level: "INFO", score: 0.28 },
+    ];
+
+    // 40% probability of anomaly generation, 60% nominal profile
+    const isAnomaly = Math.random() < 0.4;
+
+    if (!isAnomaly) {
+      const score = +(0.08 + Math.random() * 0.15).toFixed(2);
+      const synthetic = {
+        risk: "normal",
+        score,
+        signalQuality: "Good",
+        summary: "Continuous baseline acoustic profile nominal.",
+        recommendation: "Routine monitoring active.",
+        model: "audio-cnn-v2",
+        features: ["I2S capture buffer"],
+      } as AnalysisResult;
+
+      seedFromResult(synthetic, normalScore(synthetic), anomalyPercent(synthetic) / 100);
+    } else {
+      const selected = modes[Math.floor(Math.random() * modes.length)];
+      const synthetic = {
+        risk: selected.severity === "Critical" ? "critical" : selected.severity === "Medium" ? "review" : "normal",
+        score: selected.score,
+        signalQuality: "Fair",
+        summary: `${selected.signature} anomaly detected.`,
+        recommendation: "Inspect belt and roller assemblies.",
+        model: "audio-cnn-v2",
+        features: [selected.type],
+      } as AnalysisResult;
+
+      seedFromResult(synthetic, normalScore(synthetic), anomalyPercent(synthetic) / 100);
+
+      // Pushes exact signature tag to match the video format
+      pushInspectionLog(
+        selected.level,
+        selected.signature,
+        selected.type,
+        selected.severity
+      );
+    }
+  }
 
   function handleMonitoringToggle() {
     if (monitoring) {
@@ -102,89 +145,64 @@ export default function HomeScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     } else {
       startMonitoring();
-      // Auto-trigger inference loop when armed
       setBusy(true);
-      setTimeout(async () => {
+
+      // Trigger immediate initial evaluation on arming
+      setTimeout(() => {
         try {
-          // Generate synthetic data with 70% normal, 30% anomalous distribution
-          const rand = Math.random();
-          let risk: "normal" | "review" | "critical";
-          let score: number;
-          
-          if (rand < 0.7) {
-            // 70% normal
-            risk = "normal";
-            score = 0.20 + Math.random() * 0.25; // 0.20-0.45 range for normal
-          } else if (rand < 0.85) {
-            // 15% review
-            risk = "review";
-            score = 0.45 + Math.random() * 0.15; // 0.45-0.60 range for review
-          } else {
-            // 15% critical
-            risk = "critical";
-            score = 0.60 + Math.random() * 0.30; // 0.60-0.90 range for critical
-          }
-          
-          const synthetic = {
-            risk,
-            score,
-            signalQuality: risk === "normal" ? "Good" : "Fair",
-            summary: "Synthetic telemetry stream active.",
-            recommendation: "Monitor continuously.",
-            model: "HUD-auto",
-            features: ["Telemetry loop"],
-          } as AnalysisResult;
-          const anomaly = anomalyPercent(synthetic) / 100;
-          const norm = normalScore(synthetic);
-          seedFromResult(synthetic, norm, anomaly);
-          const types: AnomalyType[] = ["Belt Tear", "Motor Sparking", "Bearing Whine", "Roller Jam"];
-          const sev: AnomalySeverity[] = ["Low", "Medium", "Critical"];
-          const rndSeverity = sev[Math.floor(Math.random() * sev.length)];
-          const rndType = types[Math.floor(Math.random() * types.length)];
-          pushInspectionLog(
-            synthetic.risk === "critical" ? "CRIT" : synthetic.risk === "review" ? "WARN" : "INFO",
-            `INFERENCE LOOP — ${rndType} | ${rndSeverity} — score ${synthetic.score.toFixed(2)}`
-          );
+          generateTelemetryEvent();
         } finally {
           setBusy(false);
         }
-      }, 800);
+      }, 600);
+
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
   }
 
   return (
     <ScreenContainer className="px-3" edges={["top", "left", "right"]}>
-      <View className="flex-1 gap-y-2" style={{ paddingBottom: 16 }}>
-        <HeaderBar monitoring={monitoring} onToggle={handleMonitoringToggle} disabled={busy} />
-        <StatusBanner 
-          live={monitoring} 
+      <View className="flex-1 gap-y-2" style={{ paddingBottom: 12 }}>
+        <HeaderBar
+          monitoring={monitoring}
+          onToggle={handleMonitoringToggle}
+          disabled={busy}
+        />
+
+        <StatusBanner
+          live={monitoring}
           anomalyType={lastAnomalyType}
           anomalySeverity={lastAnomalySeverity}
+          bufferPercent={bufferPercent}
         />
-        <TargetSelect conveyorId={conveyorId} onSelect={setConveyorId} />
-        <View className="flex-row gap-x-4">
-          {/* Left Column - Acoustic Discriminator (~28%) */}
+
+        {/* 3-Column Grid: Discriminator (28%), Hardware (42%), Telemetry Log (30%) */}
+        <View className="flex-row gap-x-2.5 flex-1 min-h-0">
           <View style={{ flex: 0.28, minWidth: 0 }}>
-            <Discriminator 
-              normalScore={normalScoreV} 
+            <Discriminator
+              normalScore={normalScoreV}
               anomalyScore={anomalyScoreV}
               anomalyParam={lastAnomalyType}
               anomalySeverity={lastAnomalySeverity}
             />
           </View>
-          
-          {/* Center Column - Hardware Architecture (~42%) */}
+
           <View style={{ flex: 0.42, minWidth: 0 }}>
             <HardwareArchitecture />
           </View>
-          
-          {/* Right Column - Incident Telemetry Log (~30%) */}
+
           <View style={{ flex: 0.30, minWidth: 0 }}>
-            <TelemetryLog entries={log} onClear={() => { clearLog(); Haptics.selectionAsync(); }} />
+            <TelemetryLog
+              entries={log}
+              onClear={() => {
+                clearLog();
+                Haptics.selectionAsync();
+              }}
+            />
           </View>
         </View>
       </View>
+
       <StatusFooter relayEngaged={relay} monitoring={monitoring} />
     </ScreenContainer>
   );
