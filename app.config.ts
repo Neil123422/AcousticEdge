@@ -45,7 +45,7 @@ const config: ExpoConfig = {
     intentFilters: [{ action: "VIEW", autoVerify: true, data: [{ scheme: `manus${timestamp}`, host: "*" }], category: ["BROWSABLE", "DEFAULT"] }],
   },
   platforms: ["web"],
-  web: { bundler: "metro", output: "static", favicon: "./assets/images/favicon.png" },
+  web: { bundler: "metro", output: "single", favicon: "./assets/images/favicon.png" },
   plugins: [
     "expo-router",
     ["expo-audio", { microphonePermission: "Allow AcousticEdge to access your microphone for safe acoustic inspections." }],

@@ -102,53 +102,53 @@ export default function HomeScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     } else {
       startMonitoring();
-// Auto-trigger inference loop when armed
-       setBusy(true);
-       setTimeout(async () => {
-         try {
-           // Generate synthetic data with 70% normal, 30% anomalous distribution
-           const rand = Math.random();
-           let risk: "normal" | "review" | "critical";
-           let score: number;
-           
-           if (rand < 0.7) {
-             // 70% normal
-             risk = "normal";
-             score = 0.20 + Math.random() * 0.25; // 0.20-0.45 range for normal
-           } else if (rand < 0.85) {
-             // 15% review
-             risk = "review";
-             score = 0.45 + Math.random() * 0.15; // 0.45-0.60 range for review
-           } else {
-             // 15% critical
-             risk = "critical";
-             score = 0.60 + Math.random() * 0.30; // 0.60-0.90 range for critical
-           }
-           
-           const synthetic = {
-             risk,
-             score,
-             signalQuality: risk === "normal" ? "Good" : "Fair",
-             summary: "Synthetic telemetry stream active.",
-             recommendation: "Monitor continuously.",
-             model: "HUD-auto",
-             features: ["Telemetry loop"],
-           } as AnalysisResult;
-           const anomaly = anomalyPercent(synthetic) / 100;
-           const norm = normalScore(synthetic);
-           seedFromResult(synthetic, norm, anomaly);
-           const types: AnomalyType[] = ["Belt Tear", "Motor Sparking", "Bearing Whine", "Roller Jam"];
-           const sev: AnomalySeverity[] = ["Low", "Medium", "Critical"];
-           const rndSeverity = sev[Math.floor(Math.random() * sev.length)];
-           const rndType = types[Math.floor(Math.random() * types.length)];
-           pushInspectionLog(
-             synthetic.risk === "critical" ? "CRIT" : synthetic.risk === "review" ? "WARN" : "INFO",
-             `INFERENCE LOOP — ${rndType} | ${rndSeverity} — score ${synthetic.score.toFixed(2)}`
-           );
-         } finally {
-           setBusy(false);
-         }
-       }, 800);
+      // Auto-trigger inference loop when armed
+      setBusy(true);
+      setTimeout(async () => {
+        try {
+          // Generate synthetic data with 70% normal, 30% anomalous distribution
+          const rand = Math.random();
+          let risk: "normal" | "review" | "critical";
+          let score: number;
+          
+          if (rand < 0.7) {
+            // 70% normal
+            risk = "normal";
+            score = 0.20 + Math.random() * 0.25; // 0.20-0.45 range for normal
+          } else if (rand < 0.85) {
+            // 15% review
+            risk = "review";
+            score = 0.45 + Math.random() * 0.15; // 0.45-0.60 range for review
+          } else {
+            // 15% critical
+            risk = "critical";
+            score = 0.60 + Math.random() * 0.30; // 0.60-0.90 range for critical
+          }
+          
+          const synthetic = {
+            risk,
+            score,
+            signalQuality: risk === "normal" ? "Good" : "Fair",
+            summary: "Synthetic telemetry stream active.",
+            recommendation: "Monitor continuously.",
+            model: "HUD-auto",
+            features: ["Telemetry loop"],
+          } as AnalysisResult;
+          const anomaly = anomalyPercent(synthetic) / 100;
+          const norm = normalScore(synthetic);
+          seedFromResult(synthetic, norm, anomaly);
+          const types: AnomalyType[] = ["Belt Tear", "Motor Sparking", "Bearing Whine", "Roller Jam"];
+          const sev: AnomalySeverity[] = ["Low", "Medium", "Critical"];
+          const rndSeverity = sev[Math.floor(Math.random() * sev.length)];
+          const rndType = types[Math.floor(Math.random() * types.length)];
+          pushInspectionLog(
+            synthetic.risk === "critical" ? "CRIT" : synthetic.risk === "review" ? "WARN" : "INFO",
+            `INFERENCE LOOP — ${rndType} | ${rndSeverity} — score ${synthetic.score.toFixed(2)}`
+          );
+        } finally {
+          setBusy(false);
+        }
+      }, 800);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
   }
@@ -163,17 +163,24 @@ export default function HomeScreen() {
           anomalySeverity={lastAnomalySeverity}
         />
         <TargetSelect conveyorId={conveyorId} onSelect={setConveyorId} />
-        <Discriminator 
-          normalScore={normalScoreV} 
-          anomalyScore={anomalyScoreV}
-          anomalyParam={lastAnomalyType}
-          anomalySeverity={lastAnomalySeverity}
-        />
-        <View className="flex-row gap-x-2">
-          <View style={{ flex: 1, minWidth: 0 }}>
+        <View className="flex-row gap-x-4">
+          {/* Left Column - Acoustic Discriminator (~28%) */}
+          <View style={{ flex: 0.28, minWidth: 0 }}>
+            <Discriminator 
+              normalScore={normalScoreV} 
+              anomalyScore={anomalyScoreV}
+              anomalyParam={lastAnomalyType}
+              anomalySeverity={lastAnomalySeverity}
+            />
+          </View>
+          
+          {/* Center Column - Hardware Architecture (~42%) */}
+          <View style={{ flex: 0.42, minWidth: 0 }}>
             <HardwareArchitecture />
           </View>
-          <View style={{ flex: 1, minWidth: 0 }}>
+          
+          {/* Right Column - Incident Telemetry Log (~30%) */}
+          <View style={{ flex: 0.30, minWidth: 0 }}>
             <TelemetryLog entries={log} onClear={() => { clearLog(); Haptics.selectionAsync(); }} />
           </View>
         </View>

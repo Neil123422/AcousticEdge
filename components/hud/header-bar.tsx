@@ -7,10 +7,16 @@ import { TERM } from "@/components/terminal";
 function PowerLed({ power }: { power: boolean }) {
   const [on, setOn] = useState(true);
   useEffect(() => {
-    if (!power) { setOn(false); return; }
-    setOn(true);
+    if (!power) {
+      const timeout = setTimeout(() => setOn(false), 0);
+      return () => clearTimeout(timeout);
+    }
+    const timeout = setTimeout(() => setOn(true), 0);
     const id = setInterval(() => setOn((s) => !s), 1200);
-    return () => clearInterval(id);
+    return () => {
+      clearTimeout(timeout);
+      clearInterval(id);
+    };
   }, [power]);
 
   if (!power) {

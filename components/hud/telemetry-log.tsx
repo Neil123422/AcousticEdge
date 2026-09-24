@@ -55,12 +55,14 @@ export function TelemetryLog({
   return (
     <View style={{ borderWidth: 1, borderColor: TERM.border, backgroundColor: TERM.bgAlt }}>
       <View className="flex-row items-center justify-between px-2 py-1.5">
-        <Text className="font-mono text-xs font-bold tracking-[2px]" style={{ color: TERM.green }}>// INCIDENT TELEMETRY LOG</Text>
+        <Text className="font-mono text-xs font-bold tracking-[2px]" style={{ color: TERM.green }}>
+          {"// INCIDENT TELEMETRY LOG"}
+        </Text>
         <Pressable
           onPress={onClear}
           style={({ pressed }) => [{ borderWidth: 1, borderColor: TERM.borderDim, paddingHorizontal: 4, paddingVertical: 2, opacity: pressed ? 0.6 : 1 }]}
         >
-          <Text className="font-mono text-[8px] font-bold tracking-widest" style={{ color: TERM.amber }}>[ CLEAR LOGS ]</Text>
+          <Text className="font-mono text-[8px] font-bold tracking-widest" style={{ color: TERM.green }}>[ CLEAR ]</Text>
         </Pressable>
       </View>
 
@@ -76,6 +78,7 @@ export function TelemetryLog({
         >
           {entries.map((entry) => (
             <View key={entry.id} className="flex-row px-2 py-[2px]">
+              <Text className="font-mono text-[9px]" style={{ color: TERM.dimGray }}>&gt; </Text>
               <Text className="font-mono text-[9px]" style={{ color: TERM.dimGray }}>[{entry.ts}]</Text>
               <Text className="ml-1.5 font-mono text-[9px] font-bold" style={{ color: severityColor(entry.severity) }}>
                 {entry.severity ? `[${entry.severity}] ` : ""}{entry.message}

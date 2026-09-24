@@ -3,67 +3,150 @@ import { Text, View } from "react-native";
 
 import { TERM } from "@/components/terminal";
 
-const BAR_ROWS: number[][] = [
-  [6, 14, 9, 20, 12, 24, 16, 18, 10, 22, 8, 26, 14, 20, 12, 16, 18, 10],
-  [10, 18, 12, 22, 16, 28, 20, 14, 16, 26, 12, 20, 18, 24, 10, 14, 22, 16],
-  [14, 22, 18, 26, 20, 30, 22, 18, 20, 28, 16, 24, 20, 26, 14, 18, 24, 20],
-  [8, 16, 10, 18, 12, 22, 14, 12, 10, 18, 8, 16, 12, 18, 8, 12, 16, 10],
-];
+export type BannerState = "OK" | "ADVISORY" | "WARNING" | "CRITICAL";
 
-type AnomalySeverity = "Normal" | "Low" | "Medium" | "Critical";
+export interface StatusBannerProps {
+  live: boolean;
+  anomalyType?: string;
+  anomalySeverity?: "Low" | "Medium" | "Critical" | "Normal";
+  bufferPercent?: number;
+}
 
-function getSeverityColors(severity: AnomalySeverity) {
-  switch (severity) {
-    case "Critical":
-      return { border: "border-red-500", textClass: "text-red-500", textColor: TERM.red, bar: TERM.red, barDim: TERM.redDim };
-    case "Medium":
-      return { border: "border-orange-500", textClass: "text-orange-500", textColor: TERM.amber, bar: TERM.amber, barDim: TERM.amberDim };
-    case "Low":
-      return { border: "border-yellow-400", textClass: "text-yellow-400", textColor: TERM.amber, bar: TERM.amber, barDim: TERM.amberDim };
-    case "Normal":
-    default:
-      return { border: "border-green-500", textClass: "text-green-500", textColor: TERM.green, bar: TERM.green, barDim: TERM.greenDim };
+function getBannerState(
+  severity: "Low" | "Medium" | "Critical" | "Normal" | undefined
+): BannerState {
+  if (!severity || severity === "Normal") return "OK";
+  if (severity === "Low") return "ADVISORY";
+  if (severity === "Medium") return "WARNING";
+  if (severity === "Critical") return "CRITICAL";
+  return "OK";
+}
+
+function getStateColors(state: BannerState) {
+  switch (state) {
+    case "OK":
+      return {
+        border: "border-emerald-500",
+        textClass: "text-emerald-400",
+        hex: "#34d399",
+        bar: TERM.green,
+        barDim: TERM.greenDim,
+      };
+    case "ADVISORY":
+      return {
+        border: "border-yellow-500",
+        textClass: "text-yellow-400",
+        hex: "#facc15",
+        bar: TERM.amber,
+        barDim: TERM.amberDim,
+      };
+    case "WARNING":
+      return {
+        border: "border-orange-500",
+        textClass: "text-orange-400",
+        hex: "#fb923c",
+        bar: "#f97316",
+        barDim: "#7c2d12",
+      };
+    case "CRITICAL":
+      return {
+        border: "border-red-500",
+        textClass: "text-red-500",
+        hex: "#f87171",
+        bar: TERM.red,
+        barDim: TERM.redDim,
+      };
+  }
+}
+
+function getAnomalyTag(state: BannerState, anomalyType?: string): string {
+  if (anomalyType) {
+    const upper = anomalyType.toUpperCase();
+    if (upper.includes("SPARK")) return "SPARK";
+    if (upper.includes("SNAP") || upper.includes("TEAR")) return "SNAP";
+    if (upper.includes("CRACK") || upper.includes("WHINE") || upper.includes("JAM")) return "CRACKING";
+    return upper;
+  }
+  switch (state) {
+    case "ADVISORY": return "CRACKING";
+    case "WARNING": return "SNAP";
+    case "CRITICAL": return "SPARK";
+    default: return "";
+  }
+}
+
+function getStateLabel(state: BannerState, live: boolean, anomalyType?: string): string {
+  if (!live) return "[ -- ] MONITORING PAUSED // STANDBY";
+  const tag = getAnomalyTag(state, anomalyType);
+  switch (state) {
+    case "OK":
+      return "[ OK ] NORMAL OPERATION // NOMINAL";
+    case "ADVISORY":
+      return `[ ADVISORY ] ANOMALY DETECTED // ${tag || "CRACKING"} [LOW ALERT]`;
+    case "WARNING":
+      return `[ WARNING ] ANOMALY DETECTED // ${tag || "SNAP"} [MEDIUM ALERT]`;
+    case "CRITICAL":
+      return `[ CRITICAL ] ANOMALY DETECTED // ${tag || "SPARK"} [HIGH ALERT]`;
+  }
+}
+
+function getStateMessage(state: BannerState, live: boolean): string {
+  if (!live) {
+    return "Acoustic telemetry paused. Click [ START MONITORING ] to resume.";
+  }
+  switch (state) {
+    case "OK":
+      return "Continuous baseline acoustic profile nominal. No structural faults detected.";
+    case "ADVISORY":
+      return "> ADVISORY: Longitudinal carcass micro-fissure or surface fatigue noise identified.";
+    case "WARNING":
+      return "WARNING: Belt tensile snap or splice rupture transient waveform recorded.";
+    case "CRITICAL":
+      return "> DANGER: Spark acoustic or roller seizure friction signature identified. Auto E-Stop armed.";
   }
 }
 
 function formatTime(seconds: number): string {
-  const h = Math.floor(seconds / 3600).toString().padStart(2, "0");
-  const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, "0");
+  const h = Math.floor(seconds / 3600)
+    .toString()
+    .padStart(2, "0");
+  const m = Math.floor((seconds % 3600) / 60)
+    .toString()
+    .padStart(2, "0");
   const s = (seconds % 60).toString().padStart(2, "0");
   return `${h}:${m}:${s}`;
 }
 
-/** Format anomaly type text based on severity level. */
-function formatAnomalyType(anomalyType?: string, severity?: string): string {
-  if (!anomalyType) return "";
-  switch (severity) {
-    case "Low":
-      return `POSSIBLE ${anomalyType}`;
-    case "Medium":
-      return `UNCERTAIN ${anomalyType}`;
-    case "Critical":
-    case "High":
-    default:
-      return anomalyType;
-  }
-}
+function Waveform({
+  active,
+  barColor,
+  barDimColor,
+}: {
+  active: boolean;
+  barColor: string;
+  barDimColor: string;
+}) {
+  const BAR_ROWS: number[][] = [
+    [6, 14, 9, 20, 12, 24, 16, 18, 10, 22, 8, 26, 14, 20, 12, 16, 18, 10],
+    [10, 18, 12, 22, 16, 28, 20, 14, 16, 26, 12, 20, 18, 24, 10, 14, 22, 16],
+    [14, 22, 18, 26, 20, 30, 22, 18, 20, 28, 16, 24, 20, 26, 14, 18, 24, 20],
+    [8, 16, 10, 18, 12, 22, 14, 12, 10, 18, 8, 16, 12, 18, 8, 12, 16, 10],
+  ];
 
-function Waveform({ active, severity }: { active: boolean; severity: AnomalySeverity }) {
   const [tick, setTick] = useState(0);
-  const colors = getSeverityColors(severity);
-  
+
   useEffect(() => {
-    if (!active) {
-      setTick(0);
-      return;
-    }
+    if (!active) return;
     const id = setInterval(() => setTick((t) => t + 1), 140);
     return () => clearInterval(id);
   }, [active]);
 
   const row = BAR_ROWS[tick % BAR_ROWS.length];
   return (
-    <View className="flex-row items-end justify-between gap-x-0.5" style={{ height: 30 }}>
+    <View
+      className="flex-row items-end justify-between gap-x-0.5"
+      style={{ height: 26, width: 80 }}
+    >
       {row.map((h, i) => {
         const lit = (tick + i) % 4 === 0;
         return (
@@ -71,8 +154,8 @@ function Waveform({ active, severity }: { active: boolean; severity: AnomalySeve
             key={`${i}-${tick}`}
             className="w-[3px]"
             style={{
-              height: active ? h : 6,
-              backgroundColor: lit ? colors.bar : active ? colors.barDim : TERM.borderDim,
+              height: active ? h : 4,
+              backgroundColor: lit ? barColor : active ? barDimColor : TERM.borderDim,
             }}
           />
         );
@@ -82,72 +165,96 @@ function Waveform({ active, severity }: { active: boolean; severity: AnomalySeve
 }
 
 /**
- * Primary stream status banner with dynamic severity-based coloring and live timer.
+ * Primary stream status banner with dynamic states and buffer gauge.
  */
-export function StatusBanner({ 
-  live, 
+export function StatusBanner({
+  live,
   anomalyType,
-  anomalySeverity
-}: { 
-  live: boolean; 
-  anomalyType?: string;
-  anomalySeverity?: "Low" | "Medium" | "Critical" | "Normal";
-}) {
-  const severity = live ? (anomalySeverity ?? "Normal") : "Normal";
-  const colors = getSeverityColors(severity);
-  const showAnomaly = live && anomalyType && severity !== "Normal";
-  const formattedAnomaly = formatAnomalyType(anomalyType, severity);
+  anomalySeverity,
+  bufferPercent = 0,
+}: StatusBannerProps) {
+  const state = getBannerState(anomalySeverity);
+  const colors = getStateColors(state);
 
-  // Timer state - persists across stops, only resets on new monitoring session
   const [elapsed, setElapsed] = useState(0);
-  const [wasLive, setWasLive] = useState(false);
-  
-  useEffect(() => {
-    // Reset timer only when starting a NEW monitoring session (false -> true transition)
-    if (live && !wasLive) {
+  const [prevLive, setPrevLive] = useState(live);
+
+  // Synchronize timer reset during render phase to comply with React 19 rules
+  if (live !== prevLive) {
+    setPrevLive(live);
+    if (live) {
       setElapsed(0);
     }
-    setWasLive(live);
-    
-    if (!live) {
-      return; // Keep elapsed time when stopped
-    }
+  }
+
+  useEffect(() => {
+    if (!live) return;
     const id = setInterval(() => setElapsed((t) => t + 1), 1000);
     return () => clearInterval(id);
   }, [live]);
 
   const timerText = formatTime(elapsed);
-  const anomalyLabel = showAnomaly ? `${formattedAnomaly} (Severity: ${severity})` : null;
-  const rightLabel = anomalyLabel ? `${anomalyLabel} | ${timerText}` : timerText;
 
   return (
     <View
       className={colors.border}
       style={{
         borderWidth: 2,
+        borderColor: colors.hex,
         backgroundColor: live ? TERM.panelRaised : TERM.bgAlt,
       }}
     >
+      {/* Top row: Status tag on left, Timer and Buffer Gauge on right */}
       <View className="flex-row items-center justify-between px-3 py-2">
-        <Text className="font-mono text-xs font-bold tracking-widest" style={{ color: severity === "Normal" ? TERM.green : colors.textColor }}>
-          [ {live ? "LIVE" : "--"} ]
+        <Text
+          className="font-mono text-xs font-bold tracking-widest flex-1 pr-2"
+          style={{ color: live ? colors.hex : TERM.dimGray }}
+          numberOfLines={1}
+        >
+          {getStateLabel(state, live, anomalyType)}
         </Text>
-        <Text className="flex-1 pl-2 font-mono text-xs font-bold tracking-widest" style={{ color: severity === "Normal" ? TERM.text : colors.textColor }}>
-          {showAnomaly ? `DETECTED: ${formattedAnomaly}` : live ? "STREAM ACTIVE" : "STANDBY // AUDIO STREAM OFFLINE"}
-        </Text>
-        <Text className={`font-mono text-xs font-bold ${colors.textClass}`}>
-          {rightLabel}
-        </Text>
+
+        <View className="flex-row items-center gap-x-3">
+          {live && (
+            <Text
+              className="font-mono text-[10px] tracking-wider"
+              style={{ color: TERM.dimGray }}
+            >
+              {timerText}
+            </Text>
+          )}
+          <Text
+            className="font-mono text-xs font-bold tracking-widest"
+            style={{ color: live ? colors.hex : TERM.greenDim }}
+          >
+            {(bufferPercent ?? 0).toFixed(1)}%
+          </Text>
+        </View>
       </View>
-      <View style={{ borderTopWidth: 1, borderColor: colors.bar }} className="px-3 pb-2">
-        <Waveform active={live} severity={severity} />
-        <Text className="mt-1 font-mono text-[10px]" style={{ color: severity === "Normal" ? TERM.greenMuted : colors.bar }}>
-          {showAnomaly 
-            ? `> ${formattedAnomaly} signature detected @ 16.0 kHz`
-            : live 
-              ? "> ingesting I2S capture buffers @ 16.0 kHz" 
-              : "> press [ START MONITORING ] to initialize I2S capture buffers."}
+
+      {/* Bottom row: Sub-header prompt message + Audio Waveform visualizer */}
+      <View
+        style={{
+          borderTopWidth: 1,
+          borderColor: colors.barDim,
+        }}
+        className="flex-row items-center justify-between px-3 py-1.5"
+      >
+        <Text
+          className="flex-1 font-mono text-[10px] pr-2"
+          style={{
+            color: state === "OK" && live ? TERM.greenMuted : colors.hex,
+          }}
+          numberOfLines={1}
+        >
+          {getStateMessage(state, live)}
         </Text>
+
+        <Waveform
+          active={live}
+          barColor={colors.bar}
+          barDimColor={colors.barDim}
+        />
       </View>
     </View>
   );
