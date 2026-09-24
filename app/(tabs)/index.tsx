@@ -10,7 +10,7 @@ import { Discriminator } from "@/components/hud/discriminator";
 import { HardwareArchitecture } from "@/components/hud/hardware";
 import { TelemetryLog } from "@/components/hud/telemetry-log";
 import { StatusFooter } from "@/components/hud/status-footer";
-import { getTelemetryState, subscribeTelemetry, startMonitoring, stopMonitoring, pushInspectionLog, clearLog } from "@/lib/telemetry";
+import { getTelemetryState, subscribeTelemetry, startMonitoring, stopMonitoring, clearLog } from "@/lib/telemetry";
 
 export default function HomeScreen() {
   const state = getTelemetryState();
@@ -21,7 +21,7 @@ export default function HomeScreen() {
   const [log, setLog] = useState(state.log);
   const [lastAnomalyType, setLastAnomalyType] = useState(state.lastAnomalyType);
   const [lastAnomalySeverity, setLastAnomalySeverity] = useState(state.lastAnomalySeverity);
-  const [bufferPercent, setBufferPercent] = useState(0);
+  const [normalScoreV, setNormalScoreV] = useState(state.normalScore);
 
   useEffect(() => subscribeTelemetry((s) => {
     setMonitoring(s.monitoring); setNormalScoreV(s.normalScore); setAnomalyScoreV(s.anomalyScore);
@@ -30,18 +30,15 @@ export default function HomeScreen() {
 
   useEffect(() => {
     if (!monitoring) return;
+    // Nominal silence baseline: keep OK, high normal, low anomaly — no alert spam
     const id = setInterval(() => {
-      setBufferPercent((p) => Math.min(99, p + Math.random() * 3));
-      if (Math.random() > 0.92) {
-      const tags = ["SPARK", "SNAP", "CRACKING"];
-      const sevVals = ["Critical", "Medium", "Low"] as const;
-      const i = Math.floor(Math.random() * 3);
-        const sev: "CRIT" | "WARN" | "INFO" = sevVals[i] === "Critical" ? "CRIT" : sevVals[i] === "Medium" ? "WARN" : "INFO";
-        pushInspectionLog(sev, `> ${tags[i]} [${sevVals[i] === "Critical" ? "HIGH" : sevVals[i] === "Medium" ? "MEDIUM" : "LOW"} ALERT]`);
-      }
+      setNormalScoreV(0.94 + Math.random() * 0.05);
+      setAnomalyScoreV(0.01 + Math.random() * 0.05);
     }, 800);
     return () => clearInterval(id);
   }, [monitoring]);
+
+  const confidencePercent = monitoring ? (normalScoreV > 0.5 ? normalScoreV * 100 : anomalyScoreV * 100) : 0;
 
   function handleToggle() {
     if (monitoring) { stopMonitoring(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }
@@ -52,7 +49,7 @@ export default function HomeScreen() {
     <ScreenContainer className="px-3" edges={["top","left","right"]}>
       <View className="flex-1 gap-y-2" style={{ paddingBottom: 16 }}>
         <HeaderBar monitoring={monitoring} onToggle={handleToggle} disabled={false} />
-        <StatusBanner live={monitoring} anomalyType={lastAnomalyType} anomalySeverity={lastAnomalySeverity} bufferPercent={bufferPercent} />
+          <StatusBanner live={monitoring} anomalyType={lastAnomalyType} anomalySeverity={lastAnomalySeverity} bufferPercent={confidencePercent} />
         <View className="flex-row gap-x-4">
           <View style={{ flex: 0.28, minWidth: 0 }}><Discriminator normalScore={normalScoreV} anomalyScore={anomalyScoreV} anomalyParam={lastAnomalyType} anomalySeverity={lastAnomalySeverity} /></View>
           <View style={{ flex: 0.42, minWidth: 0 }}><HardwareArchitecture /></View>

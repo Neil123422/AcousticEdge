@@ -102,7 +102,9 @@ export function startMonitoring(): void {
     packetCount: 0,
     relayEngaged: false,
     lastAnomalyType: undefined,
-    lastAnomalySeverity: undefined,
+    lastAnomalySeverity: "Normal",
+    normalScore: 0.97,
+    anomalyScore: 0.03,
     log: _state.log.length === 0
       ? [{ id: "0", ts: fmtTs(), level: "INFO", message: "System initialized. Awaiting acoustic telemetry..." }]
       : _state.log,
@@ -167,6 +169,15 @@ function _tick(): void {
   const jitter = (Math.random() - 0.5) * 0.08; // ±4 %
   const anomaly = Math.min(0.99, Math.max(0.01, _currentSeed + jitter));
   const normal = +(1 - anomaly).toFixed(4);
+
+  // Nominal silence gate: when scores are low/normal, keep OK and do not alert
+  if (anomaly > 0.45) {
+    // Only process non-normal anomalies when genuinely elevated
+  } else {
+    _state = { ..._state, normalScore: +normal.toFixed(4), anomalyScore: +anomaly.toFixed(4), packetCount: _state.packetCount + 1, lastAnomalyType: undefined, lastAnomalySeverity: "Normal" };
+    _notify();
+    return;
+  }
 
   // Severity tiers for UI: Normal (<0.15) = safe/green, Low (0.15-0.45) = predicted/yellow,
   // Medium (0.45-0.70) = warning/orange, Critical (>0.70) = guaranteed/red
