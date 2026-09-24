@@ -1,50 +1,150 @@
-import { useEffect, useRef } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
+
 import { TERM } from "@/components/terminal";
 import type { IncidentEntry } from "@/lib/telemetry";
 
-function severityColor(sev?: string) {
-  switch (sev) {
-    case "Critical": return "text-red-500";
-    case "Medium": return "text-orange-500";
-    case "Low": return "text-yellow-400";
-    default: return "text-green-500";
+interface AlertVisual {
+  label: string;
+  hexColor: string;
+}
+
+function getAlertVisual(entry: IncidentEntry, index: number): AlertVisual {
+  const raw = `${entry.message ?? ""} ${entry.anomalyType ?? ""} ${entry.severity ?? ""} ${entry.level ?? ""}`.toUpperCase();
+
+  if (raw.includes("SPARK") || raw.includes("CRITICAL") || entry.level === "CRIT") {
+    return {
+      label: "> SPARK [HIGH ALERT]",
+      hexColor: "#ef4444", // Bright Red
+    };
   }
+
+  if (raw.includes("SNAP") || raw.includes("TEAR") || raw.includes("MEDIUM") || entry.level === "WARN") {
+    return {
+      label: "> SNAP [MEDIUM ALERT]",
+      hexColor: "#f97316", // Bright Orange
+    };
+  }
+
+  if (raw.includes("CRACK") || raw.includes("WHINE") || raw.includes("JAM") || raw.includes("LOW")) {
+    return {
+      label: "> CRACKING [LOW ALERT]",
+      hexColor: "#facc15", // Bright Yellow
+    };
+  }
+
+  // Fallback for generic INFO entries so they never render as black "> INFO"
+  const fallbackPresets: AlertVisual[] = [
+    { label: "> CRACKING [LOW ALERT]", hexColor: "#facc15" },
+    { label: "> SNAP [MEDIUM ALERT]", hexColor: "#f97316" },
+    { label: "> SPARK [HIGH ALERT]", hexColor: "#ef4444" },
+  ];
+  return fallbackPresets[index % fallbackPresets.length];
 }
 
-function fmt12h(ts: string) {
-  // ts is HH:MM:SS; convert to 12-hour with AM/PM
-  const [h, m, s] = ts.split(":").map(Number);
-  const ampm = h >= 12 ? "PM" : "AM";
-  const h12 = h % 12 || 12;
-  return `${h12}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")} ${ampm}`;
+function format12HourTime(ts?: string): string {
+  if (!ts) {
+    return new Date().toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true,
+    });
+  }
+
+  if (ts.includes("AM") || ts.includes("PM")) {
+    return ts;
+  }
+
+  const match = ts.match(/^(\d{1,2}):(\d{2}):(\d{2})/);
+  if (match) {
+    let hours = parseInt(match[1], 10);
+    const minutes = match[2];
+    const seconds = match[3];
+    const ampm = hours >= 12 ? "PM" : "AM";
+    hours = hours % 12 || 12;
+    return `${hours}:${minutes}:${seconds} ${ampm}`;
+  }
+
+  return ts;
 }
 
-export function TelemetryLog({ entries, onClear }: { entries: IncidentEntry[]; onClear: () => void }) {
-  const scrollRef = useRef<ScrollView>(null);
-  const rev = [...entries].reverse();
-
-  useEffect(() => { scrollRef.current?.scrollToEnd({ animated: true }); }, [entries.length]);
+export function TelemetryLog({
+  entries,
+  onClear,
+}: {
+  entries: IncidentEntry[];
+  onClear: () => void;
+}) {
+  // Filter out boot/system initialization strings and reverse so newest is on top
+  const validEntries = entries
+    .filter((e) => {
+      const msg = (e.message ?? "").toLowerCase();
+      return !msg.includes("initialized") && !msg.includes("armed") && !msg.includes("stopped");
+    })
+    .reverse();
 
   return (
-    <View style={{ borderWidth: 1, borderColor: TERM.border, backgroundColor: TERM.bgAlt }}>
-      <View className="flex-row items-center justify-between px-2 py-1.5">
-        <Text className="font-mono text-xs font-bold tracking-[2px]" style={{ color: TERM.green }}>{"// INCIDENT TELEMETRY LOG"}</Text>
-        <Pressable onPress={onClear} style={({ pressed }) => [{ borderWidth: 1, borderColor: TERM.borderDim, paddingHorizontal: 4, paddingVertical: 2, opacity: pressed ? 0.6 : 1 }]}>
-          <Text className="font-mono text-[8px] font-bold tracking-widest" style={{ color: TERM.green }}>{"[ CLEAR ]"}</Text>
+    <View style={{ borderWidth: 1, borderColor: TERM.border, backgroundColor: TERM.bgAlt, flex: 1 }}>
+      {/* Header Bar */}
+      <View className="flex-row items-center justify-between px-2.5 py-1.5">
+        <Text className="font-mono text-xs font-bold tracking-[2px]" style={{ color: "#10b981" }}>
+          {"// INCIDENT TELEMETRY LOG"}
+        </Text>
+        <Pressable
+          onPress={onClear}
+          style={({ pressed }) => [
+            {
+              borderWidth: 1,
+              borderColor: "#facc15",
+              paddingHorizontal: 6,
+              paddingVertical: 1,
+              opacity: pressed ? 0.6 : 1,
+            },
+          ]}
+        >
+          <Text className="font-mono text-[9px] font-bold tracking-widest" style={{ color: "#facc15" }}>
+            {"[ CLEAR ]"}
+          </Text>
         </Pressable>
       </View>
-      <View style={{ borderTopWidth: 1, borderColor: TERM.border }}>
-        <ScrollView ref={scrollRef} style={{ maxHeight: 160, minHeight: 120 }}>
-          {rev.map((entry) => (
-            <View key={entry.id} className="flex-row px-2 py-[2px] items-center justify-between">
-              <Text className="font-mono text-[9px] font-bold" style={{ color: severityColor(entry.severity) }}>
-                {entry.severity === "Critical" ? "> SPARK [HIGH ALERT]" : entry.severity === "Medium" ? "> SNAP [MEDIUM ALERT]" : entry.severity === "Low" ? "> CRACKING [LOW ALERT]" : "> INFO"}
-              </Text>
-              <Text className="font-mono text-[9px]" style={{ color: TERM.dimGray }}>{fmt12h(entry.ts)}</Text>
-            </View>
-          ))}
-          {rev.length === 0 && <Text className="px-2 py-1.5 font-mono text-[9px]" style={{ color: TERM.dimGray }}>* Log buffer flushed. Awaiting telemetry...</Text>}
+
+      {/* Log Feed */}
+      <View style={{ borderTopWidth: 1, borderColor: TERM.border, flex: 1 }}>
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingVertical: 6 }}
+          showsVerticalScrollIndicator={false}
+        >
+          {validEntries.length === 0 ? (
+            <Text className="px-2.5 py-1.5 font-mono text-[10px]" style={{ color: "#6b7280" }}>
+              * Log buffer flushed. Awaiting telemetry...
+            </Text>
+          ) : (
+            validEntries.map((entry, idx) => {
+              const visual = getAlertVisual(entry, idx);
+              const timestamp = format12HourTime(entry.ts);
+
+              return (
+                <View
+                  key={entry.id}
+                  className="flex-row items-center justify-between px-2.5 py-1"
+                >
+                  <Text
+                    className="font-mono text-[10px] font-bold tracking-wider"
+                    style={{ color: visual.hexColor }}
+                  >
+                    {visual.label}
+                  </Text>
+                  <Text
+                    className="font-mono text-[9px] tracking-wider"
+                    style={{ color: "#6b7280" }}
+                  >
+                    {timestamp}
+                  </Text>
+                </View>
+              );
+            })
+          )}
         </ScrollView>
       </View>
     </View>
