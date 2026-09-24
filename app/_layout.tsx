@@ -9,12 +9,10 @@ import { Platform } from "react-native";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import "@/lib/_core/nativewind-pressable";
-import { ThemeProvider } from "@/lib/theme-provider";
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 // Keep the splash visible until JetBrains Mono is loaded.
-SplashScreen.preventAutoHideAsync().catch(() => {});
-import {
-  SafeAreaFrameContext,
+import { SafeAreaFrameContext,
   SafeAreaInsetsContext,
   SafeAreaProvider,
   initialWindowMetrics,
@@ -22,6 +20,7 @@ import {
 import type { EdgeInsets, Metrics, Rect } from "react-native-safe-area-context";
 
 import { trpc, createTRPCClient } from "@/lib/trpc";
+import { ThemeProvider } from "@/lib/theme-provider";
 import { initManusRuntime, subscribeSafeAreaInsets } from "@/lib/_core/manus-runtime";
 
 const DEFAULT_WEB_INSETS: EdgeInsets = { top: 0, right: 0, bottom: 0, left: 0 };
@@ -36,14 +35,11 @@ export default function RootLayout() {
     JetBrainsMono: require("@/assets/fonts/JetBrainsMono-Regular.ttf"),
     JetBrainsMonoBold: require("@/assets/fonts/JetBrainsMono-Bold.ttf"),
   });
-  const [fontsReady, setFontsReady] = useState(false);
+  const fontsReady = Boolean(fontsLoaded || fontError);
 
-  useEffect(() => {
-    if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync().catch(() => {});
-      setFontsReady(true);
-    }
-  }, [fontsLoaded, fontError]);
+  if (fontsLoaded || fontError) {
+    SplashScreen.hideAsync().catch(() => {});
+  }
 
   const initialInsets = initialWindowMetrics?.insets ?? DEFAULT_WEB_INSETS;
   const initialFrame = initialWindowMetrics?.frame ?? DEFAULT_WEB_FRAME;

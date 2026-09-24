@@ -15,10 +15,7 @@ const BAR_ROWS: number[][] = [
 function LiveFeed({ active }: { active: boolean }) {
   const [tick, setTick] = useState(0);
   useEffect(() => {
-    if (!active) {
-      setTick(0);
-      return;
-    }
+    if (!active) return;
     const id = setInterval(() => setTick((t) => t + 1), 160);
     return () => clearInterval(id);
   }, [active]);

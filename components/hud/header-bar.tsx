@@ -7,23 +7,16 @@ import { TERM } from "@/components/terminal";
 function PowerLed({ power }: { power: boolean }) {
   const [on, setOn] = useState(true);
   useEffect(() => {
-    if (!power) {
-      const timeout = setTimeout(() => setOn(false), 0);
-      return () => clearTimeout(timeout);
-    }
-    const timeout = setTimeout(() => setOn(true), 0);
     const id = setInterval(() => setOn((s) => !s), 1200);
-    return () => {
-      clearTimeout(timeout);
-      clearInterval(id);
-    };
-  }, [power]);
+    return () => clearInterval(id);
+  }, []);
 
+  const ledOn = power && on;
   if (!power) {
     return <Text className="font-mono text-xs font-bold tracking-widest" style={{ color: TERM.dimGray }}>• PWR</Text>;
   }
   return (
-    <Text className="font-mono text-xs font-bold tracking-widest" style={{ color: on ? "#00FF66" : TERM.greenDim, textShadowColor: "#00FF66", textShadowRadius: on ? 6 : 0 }}>
+    <Text className="font-mono text-xs font-bold tracking-widest" style={{ color: ledOn ? "#00FF66" : TERM.greenDim, textShadowColor: "#00FF66", textShadowRadius: ledOn ? 6 : 0 }}>
       • PWR
     </Text>
   );
