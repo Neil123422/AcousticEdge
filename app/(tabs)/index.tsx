@@ -21,7 +21,6 @@ export default function HomeScreen() {
   const [log, setLog] = useState(state.log);
   const [lastAnomalyType, setLastAnomalyType] = useState(state.lastAnomalyType);
   const [lastAnomalySeverity, setLastAnomalySeverity] = useState(state.lastAnomalySeverity);
-  const [normalScoreV, setNormalScoreV] = useState(state.normalScore);
 
   useEffect(() => subscribeTelemetry((s) => {
     setMonitoring(s.monitoring); setNormalScoreV(s.normalScore); setAnomalyScoreV(s.anomalyScore);

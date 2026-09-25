@@ -9,10 +9,9 @@ import { Platform } from "react-native";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import "@/lib/_core/nativewind-pressable";
-SplashScreen.preventAutoHideAsync().catch(() => {});
-
-// Keep the splash visible until JetBrains Mono is loaded.
-import { SafeAreaFrameContext,
+import { ThemeProvider } from "@/lib/theme-provider";
+import {
+  SafeAreaFrameContext,
   SafeAreaInsetsContext,
   SafeAreaProvider,
   initialWindowMetrics,
@@ -20,8 +19,9 @@ import { SafeAreaFrameContext,
 import type { EdgeInsets, Metrics, Rect } from "react-native-safe-area-context";
 
 import { trpc, createTRPCClient } from "@/lib/trpc";
-import { ThemeProvider } from "@/lib/theme-provider";
 import { initManusRuntime, subscribeSafeAreaInsets } from "@/lib/_core/manus-runtime";
+
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 const DEFAULT_WEB_INSETS: EdgeInsets = { top: 0, right: 0, bottom: 0, left: 0 };
 const DEFAULT_WEB_FRAME: Rect = { x: 0, y: 0, width: 0, height: 0 };
