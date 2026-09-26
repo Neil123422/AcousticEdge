@@ -17,7 +17,7 @@ from src.features import window_audio
 from src.preprocess_audio import FeatureConfig, extract_feature, quality_flags
 from src.train_cnn import AudioFeatureCNN
 
-MODEL_DIR = Path("models/classifier")
+MODEL_DIR = Path(__file__).resolve().parents[1] / "models" / "classifier"
 
 feature_config = FeatureConfig(duration_seconds=4.0, feature_kind="logmel")
 

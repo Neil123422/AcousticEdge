@@ -1,10 +1,12 @@
 services:
   - type: web
     name: acousticedge
-    env: docker
+    runtime: docker
+    dockerfilePath: ./Dockerfile
     plan: free
     region: oregon
-    buildCommand: ""
-    startCommand: ""
     autoDeploy: true
     healthCheckPath: /api/inspect/health
+    envVars:
+      - key: INFERENCE_URL
+        value: http://127.0.0.1:8000

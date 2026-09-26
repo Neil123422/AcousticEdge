@@ -25,10 +25,12 @@ The phone talks directly to `https://<your-app>.onrender.com/api/inspect` — no
 ## Phase 1: Prepare the Repository (Already Done)
 
 The repo has been prepared with:
-- Fixed `.gitignore` to ship model weights (`best_model.pt`, `normalize.json`, etc.)
+- `.gitignore` set up to ship model weights (`best_model.pt`, `normalize.json`, `label_map.json`)
+  while ignoring everything else under `ml-training/models/`. The weights must actually be
+  committed — without them `/api/inspect` returns 502.
 - Dockerfile for single-container backend (FastAPI + Express)
 - `render.yaml` for Render deployment
-- `eas.json` + `.easignore` for EAS Android builds
+- `eas.json` (preview = APK, internal distribution) + `.easignore` for EAS Android builds
 - `.env` configured for container localhost (`INFERENCE_URL=http://127.0.0.1:8000`)
 
 ## Phase 2: Deploy Backend to Render (Free Tier)
@@ -65,7 +67,7 @@ The repo has been prepared with:
    ```bash
    curl -X POST https://<your-service>.onrender.com/api/inspect \
      -H "Content-Type: application/json" \
-     -d '{"audioBase64":"<tiny-base64>"}','fileName":"test.m4a","conveyorId":"CV-01"}'
+     -d '{"audioBase64":"<tiny-base64>","fileName":"test.m4a","conveyorId":"CV-01"}'
    # Expected: CNN risk JSON
    ```
 
@@ -107,10 +109,12 @@ The repo has been prepared with:
 
 - **Build fails on Render (torch OOM)**: Render free tier has 512MB RAM. The model is tiny, but torch+librosa import may spike. If OOM:
   1. Try a free Oracle Cloud VM (always-on, 1GB RAM) — same Dockerfile works.
-  2. Or use Railway (~$5/mo) for guaranteed resources.
+  2. Or upgrade to a paid Render instance type for guaranteed resources.
 - **First request slow after idle**: Render free tier sleeps after ~15 min → first request takes 30-60s (cold start). Acceptable for demos; add a keep-alive ping (e.g., UptimeRobot) if needed.
 - **Cannot install APK**: Enable "Install unknown apps" for your browser/file manager in Android Settings.
-- **No model weights in build**: Verify `.gitignore` was fixed to `!ml-training/models/` exceptions before committing.
+- **No model weights in build**: `git ls-files ml-training/models` must list `best_model.pt`,
+  `normalize.json` and `label_map.json`. If it is empty the weights were never committed and
+  inference will fail with `FileNotFoundError` in the container logs.
 
 ## Notes
 
@@ -118,5 +122,7 @@ The repo has been prepared with:
 - **No Play Store fee**: Installing the APK directly avoids the $25 one-time developer account.
 - **iOS**: Skipped per your choice; Android-only build.
 - **Costs**: $0/mo (Render free + GitHub free + Expo EAS free tier + no Play Store).
+- **Deployment target**: Render only. `render.yaml`, `README.md` and `eas.json` all point at
+  `https://acousticedge.onrender.com`; there is no Railway configuration in this repo.
 
 You now have a truly standalone acoustic inspection app that works anywhere with mobile data — no local services, no Metro, no QR codes. Just install the APK and inspect!
