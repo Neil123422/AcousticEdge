@@ -1,9 +1,8 @@
-import { useEffect, useRef, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { View } from "react-native";
 import * as Haptics from "expo-haptics";
 
 import { ScreenContainer } from "@/components/screen-container";
-import { TERM } from "@/components/terminal";
 import { HeaderBar } from "@/components/hud/header-bar";
 import { StatusBanner } from "@/components/hud/status-banner";
 import { Discriminator } from "@/components/hud/discriminator";

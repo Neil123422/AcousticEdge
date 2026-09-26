@@ -16,7 +16,7 @@
     "express": "^4.22.1",
     "jose": "^6.1.0",
     "mysql2": "^3.16.0",
-    "superjson": "^2.2.2",
+    "superjson": "^1.13.3",
     "zod": "^4.2.1"
   },
   "devDependencies": {

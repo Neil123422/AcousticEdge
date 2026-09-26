@@ -19,11 +19,16 @@ COPY ml-training/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Server Node deps (tiny set, ~1 min vs ~10 min for full app)
-COPY server/package.json ./server/package.json
-RUN npm install --prefix server
+# Installed at /app so both server/ and drizzle/ sources resolve them
+COPY server/package.json ./package.json
+RUN npm install
 
-# Copy source and build (single layer after all installs)
-COPY server/ shared/ drizzle/ ml-training/ .env tsconfig.json ./
+# Copy source and build (preserve directory structure)
+COPY server/ ./server/
+COPY shared/ ./shared/
+COPY drizzle/ ./drizzle/
+COPY ml-training/ ./ml-training/
+COPY .env ./.env
 RUN npx esbuild server/_core/index.ts --platform=node --format=cjs --bundle --outdir=dist/
 
 # ==== STAGE B: Runtime ====
@@ -31,7 +36,7 @@ FROM python:3.11-slim
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libsndfile1 curl ca-certificates curl gnupg && \
+    libsndfile1 curl ca-certificates gnupg && \
     mkdir -p /etc/apt/keyrings && \
     curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
     echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list && \

@@ -74,8 +74,9 @@ ml-training/__pycache__/
 ml-training/**/*.pyc
 
 # Ship only inference-critical model artifacts
-ml-training/models/
+ml-training/models/*
 !ml-training/models/classifier/
+ml-training/models/classifier/*
 !ml-training/models/classifier/best_model.pt
 !ml-training/models/classifier/normalize.json
 !ml-training/models/classifier/label_map.json

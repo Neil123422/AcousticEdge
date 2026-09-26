@@ -10,7 +10,7 @@ yarn-error.log*
 pnpm-debug.log*
 *.env
 .env.*
-! .env
+!.env
 .env.local
 .env.*.local
 npm ERR.*
